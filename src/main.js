@@ -2839,20 +2839,26 @@ window.syncManager = syncManager;
 // START APPLICATION
 // ============================================================================
 
-init();
-
-// Initialize TOP 5 features after main initialization
+// Initialize everything together
 document.addEventListener('DOMContentLoaded', function() {
-  verticalTabsManager.init();
-  sessionManager.init();
-  smartBookmarksManager.init();
-  passwordManager.init();
-  syncManager.init();
+  // Initialize main application first
+  init();
   
-  // Generate initial password
-  if (document.getElementById('generatedPasswordDisplay')) {
-    passwordManager.generatePassword();
+  // Then initialize TOP 5 features
+  try {
+    verticalTabsManager.init();
+    sessionManager.init();
+    smartBookmarksManager.init();
+    passwordManager.init();
+    syncManager.init();
+    
+    // Generate initial password
+    if (document.getElementById('generatedPasswordDisplay')) {
+      passwordManager.generatePassword();
+    }
+    
+    console.log('✅ All TOP 5 Chrome-alternative features initialized');
+  } catch (error) {
+    console.error('Error initializing TOP 5 features:', error);
   }
-  
-  console.log('✅ All TOP 5 Chrome-alternative features initialized');
 });

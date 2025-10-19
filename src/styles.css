@@ -1991,9 +1991,17 @@ body {
   background: var(--chrome-bg);
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.1);
   z-index: 9999;
-  display: flex;
+  display: none; /* Hidden by default */
   flex-direction: column;
   animation: slideInRight 0.3s ease;
+}
+
+/* Show panel when active */
+.session-manager-panel.active,
+.smart-bookmarks-panel.active,
+.password-manager-panel.active,
+.sync-panel.active {
+  display: flex;
 }
 
 .panel-header {

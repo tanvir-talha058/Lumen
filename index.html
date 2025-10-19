@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
-  <div id="app">
+  <div id="app" class="vertical-tabs-active">
     <!-- Vertical Tabs Sidebar -->
     <div class="vertical-tabs-sidebar" id="verticalTabsSidebar">
       <div class="vertical-tabs-header">
@@ -127,6 +127,18 @@
 
       <!-- Right-side Actions -->
       <div class="chrome-toolbar-actions">
+        <button class="chrome-toolbar-btn" onclick="document.querySelector('.session-manager-panel').style.display='flex'" title="Session Manager (Ctrl+Shift+S)">
+          <span style="font-size: 18px;">💾</span>
+        </button>
+        <button class="chrome-toolbar-btn" onclick="document.querySelector('.smart-bookmarks-panel').style.display='flex'" title="Smart Bookmarks (Ctrl+Shift+B)">
+          <span style="font-size: 18px;">🔖</span>
+        </button>
+        <button class="chrome-toolbar-btn" onclick="document.querySelector('.password-manager-panel').style.display='flex'" title="Password Manager (Ctrl+Shift+P)">
+          <span style="font-size: 18px;">🔐</span>
+        </button>
+        <button class="chrome-toolbar-btn" onclick="document.querySelector('.sync-panel').style.display='flex'" title="Sync Settings (Ctrl+Shift+Y)">
+          <span style="font-size: 18px;">☁️</span>
+        </button>
         <button class="chrome-toolbar-btn" id="extensionsBtn" title="Extensions">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
@@ -275,6 +287,29 @@
           <span class="chrome-menu-icon">🔧</span>
           <span class="chrome-menu-text">More tools</span>
           <span class="chrome-menu-arrow">›</span>
+        </div>
+      </div>
+      <div class="chrome-menu-divider"></div>
+      <div class="chrome-menu-section">
+        <div class="chrome-menu-item" onclick="document.querySelector('.session-manager-panel').style.display='flex'">
+          <span class="chrome-menu-icon">💾</span>
+          <span class="chrome-menu-text">Session Manager</span>
+          <span class="chrome-menu-shortcut">Ctrl+Shift+S</span>
+        </div>
+        <div class="chrome-menu-item" onclick="document.querySelector('.smart-bookmarks-panel').style.display='flex'">
+          <span class="chrome-menu-icon">🔖</span>
+          <span class="chrome-menu-text">Smart Bookmarks</span>
+          <span class="chrome-menu-shortcut">Ctrl+Shift+B</span>
+        </div>
+        <div class="chrome-menu-item" onclick="document.querySelector('.password-manager-panel').style.display='flex'">
+          <span class="chrome-menu-icon">🔐</span>
+          <span class="chrome-menu-text">Password Manager</span>
+          <span class="chrome-menu-shortcut">Ctrl+Shift+P</span>
+        </div>
+        <div class="chrome-menu-item" onclick="document.querySelector('.sync-panel').style.display='flex'">
+          <span class="chrome-menu-icon">☁️</span>
+          <span class="chrome-menu-text">Sync Settings</span>
+          <span class="chrome-menu-shortcut">Ctrl+Shift+Y</span>
         </div>
       </div>
       <div class="chrome-menu-divider"></div>
