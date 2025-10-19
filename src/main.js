@@ -1,6 +1,6 @@
 /**
- * Lumen Browser v2.0 - Enhanced Implementation
- * Modern, Chrome-inspired browser with innovative features
+ * Lumen Browser v3.0 - Chrome-Inspired Minimal Design
+ * Fast, Private, and Innovative Browser
  */
 
 import { invoke } from '@tauri-apps/api/tauri';
@@ -83,8 +83,6 @@ const state = {
 // ============================================================================
 
 async function init() {
-  console.log('🌟 Lumen Browser v2.0 initializing...');
-  
   await loadSettings();
   await loadBookmarks();
   await loadHistory();
@@ -109,8 +107,6 @@ async function init() {
   if (state.settings.reopenLastSession) {
     await restoreLastSession();
   }
-  
-  console.log('✅ Lumen Browser ready!');
 }
 
 // ============================================================================
@@ -197,7 +193,6 @@ async function loadBookmarks() {
     const bookmarks = await invoke('get_bookmarks');
     state.bookmarks = bookmarks || [];
   } catch (error) {
-    console.error('Failed to load bookmarks:', error);
     state.bookmarks = [];
   }
 }
@@ -226,7 +221,6 @@ async function addBookmark() {
     updateBookmarkButton(true);
     showNotification('Bookmark added!', 'success');
   } catch (error) {
-    console.error('Failed to add bookmark:', error);
     showNotification('Failed to add bookmark', 'error');
   }
 }
@@ -238,7 +232,7 @@ async function deleteBookmark(id) {
     renderBookmarks();
     updateBookmarkButton(false);
   } catch (error) {
-    console.error('Failed to delete bookmark:', error);
+    showNotification('Failed to delete bookmark', 'error');
   }
 }
 
@@ -764,16 +758,12 @@ function navigate(input) {
         <h2 style="margin-top: 24px; color: var(--text-primary);">Loading...</h2>
         <p style="margin-top: 12px; color: var(--text-secondary);">${escapeHtml(url)}</p>
         <p style="margin-top: 24px; color: var(--text-tertiary); font-size: 14px;">
-          In a full implementation, this would load the actual webpage using WebView2/WKWebView/WebKitGTK
-        </p>
+      In a full implementation, this would load the actual webpage using WebView2/WKWebView/WebKitGTK
+    </p>
       </div>
     `;
   }
-  
-  console.log('Navigating to:', url);
-}
-
-function updateSecurityIcon(url) {
+}function updateSecurityIcon(url) {
   const icon = document.getElementById('securityIcon');
   if (url.startsWith('https://')) {
     icon.textContent = '🔒';
