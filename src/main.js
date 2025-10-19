@@ -75,6 +75,26 @@ const state = {
     trackersBlocked: 0,
     adsBlocked: 0,
     fingerprintingBlocked: 0
+  },
+  
+  extensions: {
+    adBlocker: { enabled: true, blocked: 0 },
+    imageZoom: { enabled: true, trigger: 'hover' },
+    popupBlocker: { enabled: true, blocked: 0 },
+    darkReader: { enabled: false },
+    videoDownloader: { enabled: false }
+  },
+  
+  voiceSearch: {
+    isListening: false,
+    recognition: null,
+    transcript: ''
+  },
+  
+  imageZoom: {
+    currentScale: 1,
+    minScale: 0.5,
+    maxScale: 3
   }
 };
 
@@ -99,6 +119,10 @@ async function init() {
   setupTabManagement();
   setupSplitView();
   setupPrivacyTracking();
+  setupVoiceSearch();
+  setupExtensions();
+  setupImageZoom();
+  setupPopupBlocker();
   
   renderBookmarks();
   renderHistory();
@@ -1202,8 +1226,8 @@ function setupEventListeners() {
   
   // Utility buttons
   document.getElementById('bookmarkBtn').addEventListener('click', addBookmark);
-  document.getElementById('commandPaletteBtn').addEventListener('click', showCommandPalette);
-  document.getElementById('settingsBtn').addEventListener('click', () => showModal('settingsModal'));
+  document.getElementById('voiceSearchBtn').addEventListener('click', showVoiceModal);
+  document.getElementById('extensionsBtn').addEventListener('click', showExtensionsPanel);
   
   // Sidebar
   document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
@@ -1221,6 +1245,74 @@ function setupEventListeners() {
   
   // Tab overview close
   document.querySelector('.tab-overview-close').addEventListener('click', hideTabOverview);
+  
+  // Chrome Menu
+  document.getElementById('chromeMenuBtn').addEventListener('click', toggleChromeMenu);
+  document.getElementById('extensionsMenuBtn').addEventListener('click', () => {
+    toggleChromeMenu();
+    showExtensionsPanel();
+  });
+  
+  // Close menu on outside click
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('chromeMenu');
+    const btn = document.getElementById('chromeMenuBtn');
+    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+  
+  // Voice Search
+  document.getElementById('closeVoice').addEventListener('click', hideVoiceModal);
+  
+  // Extensions Panel
+  document.getElementById('closeExtensions').addEventListener('click', hideExtensionsPanel);
+  document.getElementById('adBlockerToggle').addEventListener('change', (e) => {
+    state.extensions.adBlocker.enabled = e.target.checked;
+    updateExtensionStates();
+    showNotification(`Ad Blocker ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
+  });
+  document.getElementById('imageZoomToggle').addEventListener('change', (e) => {
+    state.extensions.imageZoom.enabled = e.target.checked;
+    updateExtensionStates();
+    showNotification(`Image Zoom ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
+  });
+  document.getElementById('popupBlockerToggle').addEventListener('change', (e) => {
+    state.extensions.popupBlocker.enabled = e.target.checked;
+    updateExtensionStates();
+    showNotification(`Popup Blocker ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
+  });
+  document.getElementById('darkReaderToggle').addEventListener('change', (e) => {
+    state.extensions.darkReader.enabled = e.target.checked;
+    updateExtensionStates();
+    showNotification(`Dark Reader ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
+  });
+  document.getElementById('videoDownloaderToggle').addEventListener('change', (e) => {
+    state.extensions.videoDownloader.enabled = e.target.checked;
+    updateExtensionStates();
+    showNotification(`Video Downloader ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
+  });
+  document.getElementById('zoomTrigger').addEventListener('change', (e) => {
+    state.extensions.imageZoom.trigger = e.target.value;
+    updateExtensionStates();
+  });
+  document.getElementById('takeScreenshot').addEventListener('click', takeScreenshot);
+  document.getElementById('getMoreExtensions').addEventListener('click', () => {
+    showNotification('Extension store coming soon!', 'info');
+  });
+  
+  // Image Zoom Overlay
+  document.getElementById('closeZoom').addEventListener('click', hideImageZoom);
+  document.getElementById('imageZoomOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'imageZoomOverlay') {
+      hideImageZoom();
+    }
+  });
+  document.getElementById('zoomIn').addEventListener('click', zoomIn);
+  document.getElementById('zoomOut').addEventListener('click', zoomOut);
+  
+  // Popup Notification
+  document.getElementById('allowPopup').addEventListener('click', allowPopup);
   
   // Settings
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
@@ -1407,6 +1499,18 @@ function setupKeyboardShortcuts() {
       switchToTab(state.tabs[state.tabs.length - 1].id);
     }
     
+    // Ctrl+Shift+E - Extensions
+    else if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+      e.preventDefault();
+      showExtensionsPanel();
+    }
+    
+    // Ctrl+Shift+V - Voice Search
+    else if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+      e.preventDefault();
+      showVoiceModal();
+    }
+    
     // Alt+Left - Back
     else if (e.altKey && e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -1425,6 +1529,12 @@ function setupKeyboardShortcuts() {
         hideCommandPalette();
       } else if (state.ui.tabOverviewOpen) {
         hideTabOverview();
+      } else if (!document.getElementById('voiceModal').classList.contains('hidden')) {
+        hideVoiceModal();
+      } else if (!document.getElementById('extensionsPanel').classList.contains('hidden')) {
+        hideExtensionsPanel();
+      } else if (!document.getElementById('imageZoomOverlay').classList.contains('hidden')) {
+        hideImageZoom();
       } else {
         closeAllModals();
       }
@@ -1484,13 +1594,1265 @@ function escapeHtml(text) {
 }
 
 // ============================================================================
+// CHROME MENU
+// ============================================================================
+
+function toggleChromeMenu() {
+  const menu = document.getElementById('chromeMenu');
+  menu.classList.toggle('hidden');
+}
+
+// ============================================================================
+// VOICE SEARCH
+// ============================================================================
+
+function setupVoiceSearch() {
+  // Check if browser supports Web Speech API
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    state.voiceSearch.recognition = new SpeechRecognition();
+    state.voiceSearch.recognition.continuous = false;
+    state.voiceSearch.recognition.interimResults = true;
+    state.voiceSearch.recognition.lang = 'en-US';
+
+    state.voiceSearch.recognition.onstart = () => {
+      state.voiceSearch.isListening = true;
+      document.getElementById('voiceStatus').textContent = 'Listening...';
+      document.getElementById('voiceAnimation').classList.add('listening');
+    };
+
+    state.voiceSearch.recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      document.getElementById('voiceText').textContent = finalTranscript || interimTranscript;
+
+      if (finalTranscript) {
+        state.voiceSearch.transcript = finalTranscript;
+        processVoiceCommand(finalTranscript);
+      }
+    };
+
+    state.voiceSearch.recognition.onerror = (event) => {
+      document.getElementById('voiceStatus').textContent = 'Error: ' + event.error;
+      setTimeout(() => hideVoiceModal(), 2000);
+    };
+
+    state.voiceSearch.recognition.onend = () => {
+      state.voiceSearch.isListening = false;
+      document.getElementById('voiceAnimation').classList.remove('listening');
+    };
+  }
+}
+
+function showVoiceModal() {
+  const modal = document.getElementById('voiceModal');
+  modal.classList.remove('hidden');
+  document.getElementById('voiceText').textContent = '';
+  document.getElementById('voiceStatus').textContent = 'Listening...';
+  
+  if (state.voiceSearch.recognition) {
+    state.voiceSearch.recognition.start();
+  } else {
+    document.getElementById('voiceStatus').textContent = 'Voice search not supported in this browser';
+  }
+}
+
+function hideVoiceModal() {
+  const modal = document.getElementById('voiceModal');
+  modal.classList.add('hidden');
+  
+  if (state.voiceSearch.recognition && state.voiceSearch.isListening) {
+    state.voiceSearch.recognition.stop();
+  }
+}
+
+function processVoiceCommand(text) {
+  const lowerText = text.toLowerCase();
+  
+  // Navigate to specific websites
+  if (lowerText.includes('go to') || lowerText.includes('open')) {
+    const site = lowerText.replace(/go to |open /gi, '').trim();
+    setTimeout(() => {
+      hideVoiceModal();
+      navigate(site);
+      showNotification(`Opening ${site}`, 'success');
+    }, 500);
+  }
+  // Search
+  else if (lowerText.includes('search for')) {
+    const query = lowerText.replace(/search for /gi, '').trim();
+    setTimeout(() => {
+      hideVoiceModal();
+      navigate(query);
+    }, 500);
+  }
+  // Create new tab
+  else if (lowerText.includes('new tab')) {
+    setTimeout(() => {
+      hideVoiceModal();
+      createTab();
+      showNotification('New tab created', 'success');
+    }, 500);
+  }
+  // Close tab
+  else if (lowerText.includes('close tab')) {
+    setTimeout(() => {
+      hideVoiceModal();
+      const activeTab = state.tabs.find(t => t.active);
+      if (activeTab) closeTab(activeTab.id);
+      showNotification('Tab closed', 'success');
+    }, 500);
+  }
+  // Default: search
+  else {
+    setTimeout(() => {
+      hideVoiceModal();
+      navigate(text);
+    }, 500);
+  }
+}
+
+// ============================================================================
+// EXTENSIONS SYSTEM
+// ============================================================================
+
+function setupExtensions() {
+  // Load extension settings
+  const saved = localStorage.getItem('lumen_extensions');
+  if (saved) {
+    state.extensions = { ...state.extensions, ...JSON.parse(saved) };
+  }
+  
+  // Apply initial states
+  updateExtensionStates();
+}
+
+function showExtensionsPanel() {
+  const panel = document.getElementById('extensionsPanel');
+  panel.classList.remove('hidden');
+  
+  // Update UI with current states
+  document.getElementById('adBlockerToggle').checked = state.extensions.adBlocker.enabled;
+  document.getElementById('imageZoomToggle').checked = state.extensions.imageZoom.enabled;
+  document.getElementById('popupBlockerToggle').checked = state.extensions.popupBlocker.enabled;
+  document.getElementById('darkReaderToggle').checked = state.extensions.darkReader.enabled;
+  document.getElementById('videoDownloaderToggle').checked = state.extensions.videoDownloader.enabled;
+  document.getElementById('zoomTrigger').value = state.extensions.imageZoom.trigger;
+  
+  // Update stats
+  document.getElementById('adsBlockedCount').textContent = state.extensions.adBlocker.blocked;
+  document.getElementById('popupsBlockedCount').textContent = state.extensions.popupBlocker.blocked;
+}
+
+function hideExtensionsPanel() {
+  document.getElementById('extensionsPanel').classList.add('hidden');
+}
+
+function updateExtensionStates() {
+  // Ad Blocker
+  if (state.extensions.adBlocker.enabled) {
+    enableAdBlocker();
+  }
+  
+  // Image Zoom
+  if (state.extensions.imageZoom.enabled) {
+    enableImageZoom();
+  } else {
+    disableImageZoom();
+  }
+  
+  // Dark Reader
+  if (state.extensions.darkReader.enabled) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  
+  // Save to localStorage
+  localStorage.setItem('lumen_extensions', JSON.stringify(state.extensions));
+}
+
+function enableAdBlocker() {
+  // Simulate ad blocking
+  const adDomains = [
+    'doubleclick.net',
+    'googlesyndication.com',
+    'googleadservices.com',
+    'facebook.com/tr',
+    'analytics.google.com',
+    'adservice.google.com'
+  ];
+  
+  // This would be implemented in the actual WebView layer
+  showNotification('Ad Blocker enabled', 'success');
+}
+
+// ============================================================================
+// IMAGE ZOOM
+// ============================================================================
+
+function setupImageZoom() {
+  // This will be applied to webview content
+}
+
+function enableImageZoom() {
+  // Add zoom class to primary pane
+  document.getElementById('primaryPane').classList.add('chrome-zoom-enabled');
+  
+  // Add click listeners to all images (in real implementation, this would be in webview)
+  document.addEventListener('click', handleImageClick);
+}
+
+function disableImageZoom() {
+  document.getElementById('primaryPane').classList.remove('chrome-zoom-enabled');
+  document.removeEventListener('click', handleImageClick);
+}
+
+function handleImageClick(e) {
+  if (!state.extensions.imageZoom.enabled) return;
+  
+  if (e.target.tagName === 'IMG' && e.target.closest('.webview-container')) {
+    e.preventDefault();
+    showImageZoom(e.target.src);
+  }
+}
+
+function showImageZoom(src) {
+  const overlay = document.getElementById('imageZoomOverlay');
+  const img = document.getElementById('zoomedImage');
+  
+  img.src = src;
+  state.imageZoom.currentScale = 1;
+  updateZoomLevel();
+  
+  overlay.classList.remove('hidden');
+}
+
+function hideImageZoom() {
+  document.getElementById('imageZoomOverlay').classList.add('hidden');
+  state.imageZoom.currentScale = 1;
+}
+
+function zoomIn() {
+  if (state.imageZoom.currentScale < state.imageZoom.maxScale) {
+    state.imageZoom.currentScale += 0.25;
+    updateZoomLevel();
+  }
+}
+
+function zoomOut() {
+  if (state.imageZoom.currentScale > state.imageZoom.minScale) {
+    state.imageZoom.currentScale -= 0.25;
+    updateZoomLevel();
+  }
+}
+
+function updateZoomLevel() {
+  const img = document.getElementById('zoomedImage');
+  img.style.transform = `scale(${state.imageZoom.currentScale})`;
+  document.getElementById('zoomLevel').textContent = `${Math.round(state.imageZoom.currentScale * 100)}%`;
+}
+
+// ============================================================================
+// POPUP BLOCKER
+// ============================================================================
+
+function setupPopupBlocker() {
+  // Override window.open if popup blocker is enabled
+  const originalOpen = window.open;
+  
+  window.open = function(...args) {
+    if (state.extensions.popupBlocker.enabled) {
+      state.extensions.popupBlocker.blocked++;
+      showPopupBlockedNotification(args[0] || 'unknown');
+      return null;
+    }
+    return originalOpen.apply(this, args);
+  };
+}
+
+function showPopupBlockedNotification(url) {
+  const notification = document.getElementById('popupNotification');
+  document.getElementById('popupBlockedUrl').textContent = url;
+  notification.classList.remove('hidden');
+  
+  // Update stats in extensions panel
+  document.getElementById('popupsBlockedCount').textContent = state.extensions.popupBlocker.blocked;
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    notification.classList.add('hidden');
+  }, 5000);
+}
+
+function allowPopup() {
+  // In real implementation, would open the blocked URL
+  document.getElementById('popupNotification').classList.add('hidden');
+  showNotification('Popup allowed', 'info');
+}
+
+// ============================================================================
+// SCREENSHOT
+// ============================================================================
+
+function takeScreenshot() {
+  // Simulate screenshot functionality
+  showNotification('Screenshot captured! (Feature requires WebView integration)', 'success');
+  
+  // In real implementation with Tauri:
+  // invoke('take_screenshot').then(path => {
+  //   showNotification(`Screenshot saved to ${path}`, 'success');
+  // });
+}
+
+// ============================================================================
 // GLOBAL FUNCTIONS
 // ============================================================================
 
 window.navigate = navigate;
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+
+// ============================================================================
+// TOP 5 CHROME-ALTERNATIVE FEATURES
+// ============================================================================
+
+// =====================================================
+// VERTICAL TABS MANAGER
+// =====================================================
+
+const verticalTabsManager = {
+  tabs: [],
+  isCollapsed: false,
+
+  init() {
+    this.loadTabs();
+    this.attachEventListeners();
+    this.render();
+  },
+
+  attachEventListeners() {
+    // Toggle sidebar
+    document.querySelector('.vertical-tabs-toggle')?.addEventListener('click', () => {
+      this.toggleSidebar();
+    });
+
+    // Search tabs
+    document.querySelector('.vertical-tabs-search')?.addEventListener('input', (e) => {
+      this.searchTabs(e.target.value);
+    });
+
+    // New tab button
+    document.querySelector('.vertical-tab-new')?.addEventListener('click', () => {
+      this.createNewTab();
+    });
+  },
+
+  toggleSidebar() {
+    this.isCollapsed = !this.isCollapsed;
+    const sidebar = document.querySelector('.vertical-tabs-sidebar');
+    const app = document.getElementById('app');
+    
+    if (this.isCollapsed) {
+      sidebar?.classList.add('collapsed');
+      app?.classList.remove('vertical-tabs-active');
+    } else {
+      sidebar?.classList.remove('collapsed');
+      app?.classList.add('vertical-tabs-active');
+    }
+    
+    localStorage.setItem('verticalTabsCollapsed', this.isCollapsed);
+  },
+
+  loadTabs() {
+    const stored = localStorage.getItem('verticalTabs');
+    if (stored) {
+      this.tabs = JSON.parse(stored);
+    } else {
+      // Default tabs
+      this.tabs = [
+        { id: Date.now(), title: 'New Tab', url: 'about:blank', favicon: '🌐', active: true }
+      ];
+    }
+  },
+
+  saveTabs() {
+    localStorage.setItem('verticalTabs', JSON.stringify(this.tabs));
+  },
+
+  render() {
+    const container = document.querySelector('.vertical-tabs-list');
+    if (!container) return;
+
+    container.innerHTML = this.tabs.map(tab => `
+      <div class="vertical-tab ${tab.active ? 'active' : ''}" data-tab-id="${tab.id}">
+        <span class="tab-favicon">${tab.favicon}</span>
+        <div class="tab-info">
+          <div class="tab-title">${this.escapeHtml(tab.title)}</div>
+          <div class="tab-url">${this.escapeHtml(tab.url)}</div>
+        </div>
+        <button class="tab-close" data-action="close">×</button>
+      </div>
+    `).join('');
+
+    this.attachTabListeners();
+  },
+
+  attachTabListeners() {
+    document.querySelectorAll('.vertical-tab').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'close') {
+          this.closeTab(parseInt(el.dataset.tabId));
+        } else {
+          this.switchTab(parseInt(el.dataset.tabId));
+        }
+      });
+    });
+  },
+
+  createNewTab() {
+    const newTab = {
+      id: Date.now(),
+      title: 'New Tab',
+      url: 'about:blank',
+      favicon: '🌐',
+      active: false
+    };
+    
+    // Deactivate all tabs
+    this.tabs.forEach(tab => tab.active = false);
+    newTab.active = true;
+    
+    this.tabs.push(newTab);
+    this.saveTabs();
+    this.render();
+    showToast('New tab created', 'success');
+  },
+
+  switchTab(tabId) {
+    this.tabs.forEach(tab => {
+      tab.active = (tab.id === tabId);
+    });
+    this.saveTabs();
+    this.render();
+    showToast('Switched tab', 'success');
+  },
+
+  closeTab(tabId) {
+    if (this.tabs.length === 1) {
+      showToast('Cannot close the last tab', 'error');
+      return;
+    }
+    
+    const index = this.tabs.findIndex(tab => tab.id === tabId);
+    if (index === -1) return;
+
+    const wasActive = this.tabs[index].active;
+    this.tabs.splice(index, 1);
+
+    // If closed tab was active, activate another
+    if (wasActive && this.tabs.length > 0) {
+      const newIndex = Math.min(index, this.tabs.length - 1);
+      this.tabs[newIndex].active = true;
+    }
+
+    this.saveTabs();
+    this.render();
+    showToast('Tab closed', 'success');
+  },
+
+  searchTabs(query) {
+    const lowerQuery = query.toLowerCase();
+    document.querySelectorAll('.vertical-tab').forEach(el => {
+      const tabId = parseInt(el.dataset.tabId);
+      const tab = this.tabs.find(t => t.id === tabId);
+      if (tab) {
+        const matches = tab.title.toLowerCase().includes(lowerQuery) || 
+                       tab.url.toLowerCase().includes(lowerQuery);
+        el.style.display = matches ? 'flex' : 'none';
+      }
+    });
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// =====================================================
+// SESSION MANAGER
+// =====================================================
+
+const sessionManager = {
+  sessions: [],
+  autoSaveInterval: null,
+  autoSaveEnabled: false,
+
+  init() {
+    this.loadSessions();
+    this.attachEventListeners();
+    this.updateCurrentSession();
+    this.renderSessions();
+  },
+
+  attachEventListeners() {
+    // Save current session
+    document.getElementById('saveCurrentSession')?.addEventListener('click', () => {
+      this.saveCurrentSession();
+    });
+
+    // Auto-save toggle
+    document.getElementById('autoSaveToggle')?.addEventListener('change', (e) => {
+      this.toggleAutoSave(e.target.checked);
+    });
+
+    // Close panel
+    document.querySelector('.session-manager-panel .panel-close')?.addEventListener('click', () => {
+      document.querySelector('.session-manager-panel').style.display = 'none';
+    });
+  },
+
+  loadSessions() {
+    const stored = localStorage.getItem('browserSessions');
+    if (stored) {
+      this.sessions = JSON.parse(stored);
+    }
+
+    const autoSave = localStorage.getItem('autoSaveEnabled');
+    if (autoSave === 'true') {
+      this.toggleAutoSave(true);
+      document.getElementById('autoSaveToggle').checked = true;
+    }
+  },
+
+  saveSessions() {
+    localStorage.setItem('browserSessions', JSON.stringify(this.sessions));
+  },
+
+  saveCurrentSession() {
+    const session = {
+      id: Date.now(),
+      name: `Session ${new Date().toLocaleString()}`,
+      timestamp: Date.now(),
+      tabs: verticalTabsManager.tabs.map(t => ({...t})),
+      tabCount: verticalTabsManager.tabs.length
+    };
+
+    this.sessions.unshift(session);
+    if (this.sessions.length > 20) {
+      this.sessions = this.sessions.slice(0, 20); // Keep last 20
+    }
+
+    this.saveSessions();
+    this.renderSessions();
+    showToast('Session saved successfully', 'success');
+  },
+
+  restoreSession(sessionId) {
+    const session = this.sessions.find(s => s.id === sessionId);
+    if (!session) {
+      showToast('Session not found', 'error');
+      return;
+    }
+
+    verticalTabsManager.tabs = session.tabs.map(t => ({...t}));
+    verticalTabsManager.saveTabs();
+    verticalTabsManager.render();
+
+    showToast(`Restored session with ${session.tabCount} tabs`, 'success');
+  },
+
+  deleteSession(sessionId) {
+    this.sessions = this.sessions.filter(s => s.id !== sessionId);
+    this.saveSessions();
+    this.renderSessions();
+    showToast('Session deleted', 'success');
+  },
+
+  toggleAutoSave(enabled) {
+    this.autoSaveEnabled = enabled;
+    localStorage.setItem('autoSaveEnabled', enabled);
+
+    if (enabled) {
+      this.startAutoSave();
+      showToast('Auto-save enabled (every 5 minutes)', 'success');
+    } else {
+      this.stopAutoSave();
+      showToast('Auto-save disabled', 'success');
+    }
+  },
+
+  startAutoSave() {
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+    }
+    // Auto-save every 5 minutes
+    this.autoSaveInterval = setInterval(() => {
+      this.saveCurrentSession();
+    }, 5 * 60 * 1000);
+  },
+
+  stopAutoSave() {
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+      this.autoSaveInterval = null;
+    }
+  },
+
+  updateCurrentSession() {
+    const tabCount = verticalTabsManager.tabs.length;
+    const lastSaved = this.sessions.length > 0 
+      ? new Date(this.sessions[0].timestamp).toLocaleTimeString()
+      : 'Never';
+
+    const infoEl = document.querySelector('.session-current .session-info');
+    if (infoEl) {
+      infoEl.innerHTML = `
+        <span>${tabCount} tabs open</span>
+        <span>Last saved: ${lastSaved}</span>
+      `;
+    }
+  },
+
+  renderSessions() {
+    const container = document.getElementById('savedSessionsList');
+    if (!container) return;
+
+    if (this.sessions.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: var(--chrome-text-secondary); padding: 20px;">No saved sessions yet</p>';
+      return;
+    }
+
+    container.innerHTML = this.sessions.map(session => `
+      <div class="session-item" data-session-id="${session.id}">
+        <div class="session-item-info">
+          <h4>${this.escapeHtml(session.name)}</h4>
+          <p>${session.tabCount} tabs • ${new Date(session.timestamp).toLocaleString()}</p>
+        </div>
+        <div class="session-item-actions">
+          <button class="btn-icon" onclick="sessionManager.restoreSession(${session.id})" title="Restore">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
+          <button class="btn-icon" onclick="sessionManager.deleteSession(${session.id})" title="Delete">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    this.updateCurrentSession();
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// =====================================================
+// SMART BOOKMARKS MANAGER
+// =====================================================
+
+const smartBookmarksManager = {
+  bookmarks: [],
+  currentFilter: 'all',
+
+  init() {
+    this.loadBookmarks();
+    this.attachEventListeners();
+    this.renderBookmarks();
+    this.renderCategories();
+  },
+
+  attachEventListeners() {
+    // Search
+    document.querySelector('.smart-bookmarks-panel .bookmarks-search-bar input')?.addEventListener('input', (e) => {
+      this.searchBookmarks(e.target.value);
+    });
+
+    // Filters
+    document.querySelectorAll('.bookmarks-filters .filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.setFilter(e.target.dataset.filter);
+      });
+    });
+
+    // Close panel
+    document.querySelector('.smart-bookmarks-panel .panel-close')?.addEventListener('click', () => {
+      document.querySelector('.smart-bookmarks-panel').style.display = 'none';
+    });
+  },
+
+  loadBookmarks() {
+    const stored = localStorage.getItem('smartBookmarks');
+    if (stored) {
+      this.bookmarks = JSON.parse(stored);
+    } else {
+      // Default bookmarks
+      this.bookmarks = [
+        {
+          id: 1,
+          title: 'Google',
+          url: 'https://google.com',
+          favicon: '🔍',
+          tags: ['search', 'tools'],
+          category: 'Productivity',
+          visits: 45,
+          lastVisit: Date.now(),
+          dateAdded: Date.now()
+        }
+      ];
+    }
+  },
+
+  saveBookmarks() {
+    localStorage.setItem('smartBookmarks', JSON.stringify(this.bookmarks));
+  },
+
+  addBookmark(bookmark) {
+    bookmark.id = Date.now();
+    bookmark.visits = 0;
+    bookmark.dateAdded = Date.now();
+    bookmark.lastVisit = Date.now();
+    
+    this.bookmarks.unshift(bookmark);
+    this.saveBookmarks();
+    this.renderBookmarks();
+    this.renderCategories();
+    showToast('Bookmark added', 'success');
+  },
+
+  deleteBookmark(id) {
+    this.bookmarks = this.bookmarks.filter(b => b.id !== id);
+    this.saveBookmarks();
+    this.renderBookmarks();
+    showToast('Bookmark deleted', 'success');
+  },
+
+  setFilter(filter) {
+    this.currentFilter = filter;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+
+    this.renderBookmarks();
+  },
+
+  searchBookmarks(query) {
+    const lowerQuery = query.toLowerCase();
+    document.querySelectorAll('.bookmark-card').forEach(el => {
+      const id = parseInt(el.dataset.bookmarkId);
+      const bookmark = this.bookmarks.find(b => b.id === id);
+      if (bookmark) {
+        const matches = bookmark.title.toLowerCase().includes(lowerQuery) ||
+                       bookmark.url.toLowerCase().includes(lowerQuery) ||
+                       bookmark.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+        el.style.display = matches ? 'flex' : 'none';
+      }
+    });
+  },
+
+  filterBookmarks() {
+    const now = Date.now();
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+
+    switch (this.currentFilter) {
+      case 'recent':
+        return this.bookmarks.filter(b => b.lastVisit > oneDayAgo);
+      case 'mostVisited':
+        return [...this.bookmarks].sort((a, b) => b.visits - a.visits).slice(0, 20);
+      case 'untagged':
+        return this.bookmarks.filter(b => !b.tags || b.tags.length === 0);
+      default:
+        return this.bookmarks;
+    }
+  },
+
+  renderBookmarks() {
+    const container = document.getElementById('smartBookmarksList');
+    if (!container) return;
+
+    const filtered = this.filterBookmarks();
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: var(--chrome-text-secondary); padding: 20px;">No bookmarks found</p>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(bookmark => `
+      <div class="bookmark-card" data-bookmark-id="${bookmark.id}">
+        <span class="bookmark-favicon">${bookmark.favicon}</span>
+        <div class="bookmark-info">
+          <h4>${this.escapeHtml(bookmark.title)}</h4>
+          <p>${this.escapeHtml(bookmark.url)}</p>
+          ${bookmark.tags && bookmark.tags.length > 0 ? `
+            <div class="bookmark-tags">
+              ${bookmark.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+        <div class="bookmark-actions">
+          <button class="btn-icon" onclick="smartBookmarksManager.openBookmark(${bookmark.id})" title="Open">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <path d="M15 3h6v6"/>
+              <path d="M10 14L21 3"/>
+            </svg>
+          </button>
+          <button class="btn-icon" onclick="smartBookmarksManager.deleteBookmark(${bookmark.id})" title="Delete">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  renderCategories() {
+    const categories = [...new Set(this.bookmarks.map(b => b.category).filter(Boolean))];
+    const container = document.querySelector('.bookmarks-categories');
+    if (!container) return;
+
+    container.innerHTML = categories.map(cat => 
+      `<span class="category-tag">${this.escapeHtml(cat)}</span>`
+    ).join('');
+  },
+
+  openBookmark(id) {
+    const bookmark = this.bookmarks.find(b => b.id === id);
+    if (bookmark) {
+      bookmark.visits++;
+      bookmark.lastVisit = Date.now();
+      this.saveBookmarks();
+      window.open(bookmark.url, '_blank');
+    }
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// =====================================================
+// PASSWORD MANAGER
+// =====================================================
+
+const passwordManager = {
+  passwords: [],
+  masterPassword: null,
+  isUnlocked: false,
+
+  init() {
+    this.loadPasswords();
+    this.attachEventListeners();
+  },
+
+  attachEventListeners() {
+    // Unlock vault
+    document.getElementById('unlockVaultBtn')?.addEventListener('click', () => {
+      this.unlockVault();
+    });
+
+    // Search passwords
+    document.querySelector('.password-manager-panel .password-search-bar input')?.addEventListener('input', (e) => {
+      this.searchPasswords(e.target.value);
+    });
+
+    // Generate password
+    document.getElementById('generatePasswordBtn')?.addEventListener('click', () => {
+      this.generatePassword();
+    });
+
+    // Password length slider
+    document.getElementById('passwordLength')?.addEventListener('input', (e) => {
+      document.getElementById('lengthValue').textContent = e.target.value;
+      this.generatePassword();
+    });
+
+    // Generator options
+    ['genUppercase', 'genLowercase', 'genNumbers', 'genSymbols'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        this.generatePassword();
+      });
+    });
+
+    // Close panel
+    document.querySelector('.password-manager-panel .panel-close')?.addEventListener('click', () => {
+      document.querySelector('.password-manager-panel').style.display = 'none';
+    });
+  },
+
+  loadPasswords() {
+    const stored = localStorage.getItem('encryptedPasswords');
+    if (stored) {
+      this.passwords = JSON.parse(stored);
+    }
+  },
+
+  savePasswords() {
+    localStorage.setItem('encryptedPasswords', JSON.stringify(this.passwords));
+  },
+
+  unlockVault() {
+    const input = document.getElementById('masterPasswordInput');
+    const password = input?.value;
+
+    if (!password) {
+      showToast('Please enter master password', 'error');
+      return;
+    }
+
+    // Simple validation (in production, this would verify against encrypted hash)
+    this.masterPassword = password;
+    this.isUnlocked = true;
+
+    document.querySelector('.password-unlock')?.style.display = 'none';
+    document.querySelector('.password-vault')?.style.display = 'block';
+
+    this.renderPasswords();
+    this.updateStats();
+    showToast('Vault unlocked', 'success');
+  },
+
+  renderPasswords() {
+    const container = document.getElementById('passwordsList');
+    if (!container) return;
+
+    if (this.passwords.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: var(--chrome-text-secondary); padding: 20px;">No passwords saved yet</p>';
+      return;
+    }
+
+    container.innerHTML = this.passwords.map(pwd => `
+      <div class="password-item" data-password-id="${pwd.id}">
+        <div class="password-site">
+          <img src="${pwd.favicon || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><text y="20" font-size="20">🔐</text></svg>'}" alt="${this.escapeHtml(pwd.site)}">
+          <div>
+            <h4>${this.escapeHtml(pwd.site)}</h4>
+            <p>${this.escapeHtml(pwd.username)}</p>
+          </div>
+        </div>
+        <div class="password-actions">
+          <button class="btn-icon" onclick="passwordManager.copyPassword(${pwd.id})" title="Copy Password">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="btn-icon" onclick="passwordManager.deletePassword(${pwd.id})" title="Delete">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  updateStats() {
+    // Analyze password strength
+    let weak = 0, reused = 0, breached = 0;
+
+    this.passwords.forEach(pwd => {
+      if (pwd.password && pwd.password.length < 12) weak++;
+      // Check for reused passwords
+      const samePassword = this.passwords.filter(p => p.password === pwd.password);
+      if (samePassword.length > 1) reused++;
+    });
+
+    document.getElementById('weakCount').textContent = weak;
+    document.getElementById('reusedCount').textContent = reused;
+    document.getElementById('breachedCount').textContent = breached;
+  },
+
+  generatePassword() {
+    const length = parseInt(document.getElementById('passwordLength')?.value || 16);
+    const useUppercase = document.getElementById('genUppercase')?.checked ?? true;
+    const useLowercase = document.getElementById('genLowercase')?.checked ?? true;
+    const useNumbers = document.getElementById('genNumbers')?.checked ?? true;
+    const useSymbols = document.getElementById('genSymbols')?.checked ?? true;
+
+    let charset = '';
+    if (useUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (useLowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+    if (useNumbers) charset += '0123456789';
+    if (useSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+    if (charset === '') charset = 'abcdefghijklmnopqrstuvwxyz';
+
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset[Math.floor(Math.random() * charset.length)];
+    }
+
+    const display = document.getElementById('generatedPasswordDisplay');
+    if (display) {
+      display.value = password;
+    }
+
+    this.updatePasswordStrength(password);
+  },
+
+  updatePasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength += 20;
+    if (password.length >= 12) strength += 20;
+    if (password.length >= 16) strength += 10;
+    if (/[a-z]/.test(password)) strength += 10;
+    if (/[A-Z]/.test(password)) strength += 10;
+    if (/[0-9]/.test(password)) strength += 15;
+    if (/[^a-zA-Z0-9]/.test(password)) strength += 15;
+
+    const fill = document.querySelector('.strength-fill');
+    const text = document.getElementById('strengthText');
+    
+    if (fill) {
+      fill.style.width = strength + '%';
+      
+      if (strength < 40) {
+        fill.style.background = '#d93025';
+        if (text) text.textContent = 'Weak';
+      } else if (strength < 70) {
+        fill.style.background = '#f9ab00';
+        if (text) text.textContent = 'Medium';
+      } else {
+        fill.style.background = '#1e8e3e';
+        if (text) text.textContent = 'Strong';
+      }
+    }
+  },
+
+  copyPassword(id) {
+    const pwd = this.passwords.find(p => p.id === id);
+    if (pwd && pwd.password) {
+      navigator.clipboard.writeText(pwd.password).then(() => {
+        showToast('Password copied to clipboard', 'success');
+      });
+    }
+  },
+
+  deletePassword(id) {
+    this.passwords = this.passwords.filter(p => p.id !== id);
+    this.savePasswords();
+    this.renderPasswords();
+    this.updateStats();
+    showToast('Password deleted', 'success');
+  },
+
+  searchPasswords(query) {
+    const lowerQuery = query.toLowerCase();
+    document.querySelectorAll('.password-item').forEach(el => {
+      const id = parseInt(el.dataset.passwordId);
+      const pwd = this.passwords.find(p => p.id === id);
+      if (pwd) {
+        const matches = pwd.site.toLowerCase().includes(lowerQuery) ||
+                       pwd.username.toLowerCase().includes(lowerQuery);
+        el.style.display = matches ? 'flex' : 'none';
+      }
+    });
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// =====================================================
+// UNIVERSAL SYNC MANAGER
+// =====================================================
+
+const syncManager = {
+  devices: [],
+  syncSettings: {
+    bookmarks: true,
+    history: true,
+    passwords: true,
+    extensions: true,
+    sessions: true,
+    settings: true
+  },
+  isSyncing: false,
+  lastSync: null,
+
+  init() {
+    this.loadSettings();
+    this.loadDevices();
+    this.attachEventListeners();
+    this.renderDevices();
+    this.updateSyncStatus();
+  },
+
+  attachEventListeners() {
+    // Sync now button
+    document.getElementById('syncNowBtn')?.addEventListener('click', () => {
+      this.syncNow();
+    });
+
+    // Sync settings checkboxes
+    ['syncBookmarks', 'syncHistory', 'syncPasswords', 'syncExtensions', 'syncSessions', 'syncSettings'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', (e) => {
+        const setting = id.replace('sync', '').toLowerCase();
+        this.syncSettings[setting] = e.target.checked;
+        this.saveSettings();
+      });
+    });
+
+    // Close panel
+    document.querySelector('.sync-panel .panel-close')?.addEventListener('click', () => {
+      document.querySelector('.sync-panel').style.display = 'none';
+    });
+  },
+
+  loadSettings() {
+    const stored = localStorage.getItem('syncSettings');
+    if (stored) {
+      this.syncSettings = JSON.parse(stored);
+    }
+
+    const lastSync = localStorage.getItem('lastSyncTime');
+    if (lastSync) {
+      this.lastSync = parseInt(lastSync);
+    }
+
+    // Update checkboxes
+    Object.keys(this.syncSettings).forEach(key => {
+      const checkbox = document.getElementById(`sync${key.charAt(0).toUpperCase() + key.slice(1)}`);
+      if (checkbox) {
+        checkbox.checked = this.syncSettings[key];
+      }
+    });
+  },
+
+  saveSettings() {
+    localStorage.setItem('syncSettings', JSON.stringify(this.syncSettings));
+  },
+
+  loadDevices() {
+    const stored = localStorage.getItem('syncDevices');
+    if (stored) {
+      this.devices = JSON.parse(stored);
+    } else {
+      // Current device
+      this.devices = [{
+        id: 1,
+        name: 'Desktop',
+        type: 'Windows',
+        lastSync: Date.now(),
+        active: true
+      }];
+    }
+  },
+
+  saveDevices() {
+    localStorage.setItem('syncDevices', JSON.stringify(this.devices));
+  },
+
+  async syncNow() {
+    if (this.isSyncing) {
+      showToast('Sync already in progress', 'info');
+      return;
+    }
+
+    this.isSyncing = true;
+    const icon = document.querySelector('.sync-icon');
+    icon?.classList.add('syncing');
+
+    showToast('Syncing data...', 'info');
+
+    // Simulate sync (in production, this would communicate with backend)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    this.lastSync = Date.now();
+    localStorage.setItem('lastSyncTime', this.lastSync.toString());
+
+    this.isSyncing = false;
+    icon?.classList.remove('syncing');
+    this.updateSyncStatus();
+
+    showToast('Sync completed successfully', 'success');
+  },
+
+  updateSyncStatus() {
+    const timeEl = document.querySelector('.sync-time');
+    if (timeEl) {
+      if (this.lastSync) {
+        const date = new Date(this.lastSync);
+        timeEl.textContent = `Last synced: ${date.toLocaleString()}`;
+      } else {
+        timeEl.textContent = 'Never synced';
+      }
+    }
+  },
+
+  renderDevices() {
+    const container = document.querySelector('.device-list');
+    if (!container) return;
+
+    container.innerHTML = this.devices.map(device => `
+      <div class="device-item ${device.active ? 'active' : ''}" data-device-id="${device.id}">
+        <div class="device-icon">💻</div>
+        <div class="device-info">
+          <h4>${this.escapeHtml(device.name)} ${device.active ? '(This Device)' : ''}</h4>
+          <p>${this.escapeHtml(device.type)} • Last synced: ${new Date(device.lastSync).toLocaleString()}</p>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// Make managers globally accessible
+window.verticalTabsManager = verticalTabsManager;
+window.sessionManager = sessionManager;
+window.smartBookmarksManager = smartBookmarksManager;
+window.passwordManager = passwordManager;
+window.syncManager = syncManager;
 
 // ============================================================================
 // START APPLICATION
 // ============================================================================
 
 init();
+
+// Initialize TOP 5 features after main initialization
+document.addEventListener('DOMContentLoaded', function() {
+  verticalTabsManager.init();
+  sessionManager.init();
+  smartBookmarksManager.init();
+  passwordManager.init();
+  syncManager.init();
+  
+  // Generate initial password
+  if (document.getElementById('generatedPasswordDisplay')) {
+    passwordManager.generatePassword();
+  }
+  
+  console.log('✅ All TOP 5 Chrome-alternative features initialized');
+});

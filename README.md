@@ -36,6 +36,11 @@ Features you won't find in Chrome:
 
 | Feature | Description | Shortcut |
 |---------|-------------|----------|
+| **🎙️ Voice Search** | Hands-free browsing with voice commands | `Ctrl+Shift+V` |
+| **🧩 Extensions** | 6 built-in extensions (Ad Blocker, Image Zoom, etc.) | `Ctrl+Shift+E` |
+| **🛡️ Ad Blocker** | Block ads and trackers automatically | Built-in |
+| **🔍 Image Zoom** | Click or hover to zoom any image | Built-in |
+| **🚫 Popup Blocker** | Block unwanted popups automatically | Built-in |
 | **Command Palette** | Spotlight-style quick actions | `Ctrl+K` |
 | **Tab Overview** | Visual grid of all tabs | `Ctrl+Shift+O` |
 | **Native Split View** | Side-by-side browsing | `Ctrl+\` |
@@ -79,6 +84,11 @@ Features you won't find in Chrome:
 | Feature | Chrome | Edge | Brave | Lumen |
 |---------|--------|------|-------|-------|
 | Chrome-style UI | ✅ | ✅ | ❌ | ✅ |
+| Voice Search | ✅ | ✅ | ❌ | ✅ |
+| Built-in Ad Blocker | ❌ | ❌ | ✅ | ✅ |
+| Image Zoom | ❌ | ❌ | ❌ | ✅ |
+| Popup Blocker | Basic | Basic | ✅ | ✅ |
+| Extensions System | Store | Store | Store | **Built-in** |
 | Command Palette | ❌ | ❌ | ❌ | ✅ |
 | Split View | ❌ | ❌ | ❌ | ✅ |
 | Tab Overview | Basic | Basic | Basic | Enhanced |

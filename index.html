@@ -8,6 +8,32 @@
 </head>
 <body>
   <div id="app">
+    <!-- Vertical Tabs Sidebar -->
+    <div class="vertical-tabs-sidebar" id="verticalTabsSidebar">
+      <div class="vertical-tabs-header">
+        <button class="vertical-tabs-toggle" id="toggleVerticalTabs" title="Toggle Vertical Tabs">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+        </button>
+        <input type="text" class="vertical-tabs-search" id="verticalTabsSearch" placeholder="Search tabs..." />
+        <button class="vertical-tabs-settings" title="Tab Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="vertical-tabs-list" id="verticalTabsList">
+        <!-- Tabs rendered here by JS -->
+      </div>
+      <button class="vertical-tab-new" id="newVerticalTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        New Tab
+      </button>
+    </div>
+
     <!-- Chrome-style Top Bar with Tabs -->
     <div class="chrome-topbar">
       <!-- Tab Strip -->
@@ -253,6 +279,11 @@
       </div>
       <div class="chrome-menu-divider"></div>
       <div class="chrome-menu-section">
+        <div class="chrome-menu-item" id="extensionsMenuBtn">
+          <span class="chrome-menu-icon">🧩</span>
+          <span class="chrome-menu-text">Extensions</span>
+          <span class="chrome-menu-shortcut">Ctrl+Shift+E</span>
+        </div>
         <div class="chrome-menu-item" id="settingsMenu">
           <span class="chrome-menu-icon">⚙️</span>
           <span class="chrome-menu-text">Settings</span>
@@ -388,8 +419,420 @@
       <span id="privacyBadgeText">2 trackers blocked</span>
     </div>
 
+    <!-- Voice Search Modal -->
+    <div class="chrome-voice-modal hidden" id="voiceModal">
+      <div class="chrome-voice-dialog">
+        <button class="chrome-voice-close" id="closeVoice">×</button>
+        <div class="chrome-voice-animation" id="voiceAnimation">
+          <div class="chrome-voice-pulse"></div>
+          <div class="chrome-voice-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="chrome-voice-status" id="voiceStatus">Listening...</div>
+        <div class="chrome-voice-text" id="voiceText"></div>
+        <div class="chrome-voice-hint">Try saying "Search for cats" or "Go to YouTube"</div>
+      </div>
+    </div>
+
+    <!-- Extensions Panel -->
+    <div class="chrome-extensions-panel hidden" id="extensionsPanel">
+      <div class="chrome-extensions-header">
+        <h2>Extensions</h2>
+        <button class="chrome-panel-close" id="closeExtensions">×</button>
+      </div>
+      <div class="chrome-extensions-content">
+        <div class="chrome-extensions-grid">
+          <!-- Ad Blocker -->
+          <div class="chrome-extension-card" data-extension="adblock">
+            <div class="chrome-extension-icon">🛡️</div>
+            <div class="chrome-extension-info">
+              <h3>Ad Blocker</h3>
+              <p>Block ads and trackers automatically</p>
+              <div class="chrome-extension-stats">
+                <span id="adsBlockedCount">0</span> ads blocked
+              </div>
+            </div>
+            <label class="chrome-extension-toggle">
+              <input type="checkbox" id="adBlockerToggle" checked>
+              <span class="chrome-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Image Zoom -->
+          <div class="chrome-extension-card" data-extension="imagezoom">
+            <div class="chrome-extension-icon">🔍</div>
+            <div class="chrome-extension-info">
+              <h3>Image Zoom</h3>
+              <p>Hover over images to zoom in</p>
+              <div class="chrome-extension-options">
+                <select id="zoomTrigger" class="chrome-mini-select">
+                  <option value="hover">Hover</option>
+                  <option value="click">Click</option>
+                </select>
+              </div>
+            </div>
+            <label class="chrome-extension-toggle">
+              <input type="checkbox" id="imageZoomToggle" checked>
+              <span class="chrome-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Popup Blocker -->
+          <div class="chrome-extension-card" data-extension="popupblock">
+            <div class="chrome-extension-icon">🚫</div>
+            <div class="chrome-extension-info">
+              <h3>Popup Blocker</h3>
+              <p>Block unwanted popup windows</p>
+              <div class="chrome-extension-stats">
+                <span id="popupsBlockedCount">0</span> popups blocked
+              </div>
+            </div>
+            <label class="chrome-extension-toggle">
+              <input type="checkbox" id="popupBlockerToggle" checked>
+              <span class="chrome-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Dark Mode -->
+          <div class="chrome-extension-card" data-extension="darkmode">
+            <div class="chrome-extension-icon">🌙</div>
+            <div class="chrome-extension-info">
+              <h3>Dark Reader</h3>
+              <p>Apply dark mode to all websites</p>
+            </div>
+            <label class="chrome-extension-toggle">
+              <input type="checkbox" id="darkReaderToggle">
+              <span class="chrome-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Screenshot Tool -->
+          <div class="chrome-extension-card" data-extension="screenshot">
+            <div class="chrome-extension-icon">📸</div>
+            <div class="chrome-extension-info">
+              <h3>Screenshot</h3>
+              <p>Capture full page or visible area</p>
+              <button class="chrome-extension-action" id="takeScreenshot">Take Screenshot</button>
+            </div>
+          </div>
+
+          <!-- Video Downloader -->
+          <div class="chrome-extension-card" data-extension="videodownload">
+            <div class="chrome-extension-icon">⬇️</div>
+            <div class="chrome-extension-info">
+              <h3>Video Downloader</h3>
+              <p>Download videos from websites</p>
+            </div>
+            <label class="chrome-extension-toggle">
+              <input type="checkbox" id="videoDownloaderToggle">
+              <span class="chrome-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="chrome-extensions-footer">
+          <button class="chrome-btn-primary" id="getMoreExtensions">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            Get more extensions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Zoom Overlay -->
+    <div class="chrome-zoom-overlay hidden" id="imageZoomOverlay">
+      <img src="" alt="Zoomed image" id="zoomedImage">
+      <button class="chrome-zoom-close" id="closeZoom">×</button>
+      <div class="chrome-zoom-controls">
+        <button id="zoomOut">−</button>
+        <span id="zoomLevel">100%</span>
+        <button id="zoomIn">+</button>
+      </div>
+    </div>
+
+    <!-- Popup Notification -->
+    <div class="chrome-popup-notification hidden" id="popupNotification">
+      <div class="chrome-popup-content">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <div class="chrome-popup-text">
+          <strong>Popup blocked</strong>
+          <p id="popupBlockedUrl"></p>
+        </div>
+        <button class="chrome-popup-allow" id="allowPopup">Allow</button>
+      </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div class="chrome-toast-container" id="toastContainer"></div>
+
+    <!-- Session Manager Panel -->
+    <div class="session-manager-panel hidden" id="sessionManagerPanel">
+      <div class="panel-header">
+        <h2>💾 Session Manager</h2>
+        <button class="panel-close" id="closeSessionManager">×</button>
+      </div>
+      <div class="panel-content">
+        <div class="session-actions">
+          <button class="btn-primary" id="saveCurrentSession">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+            </svg>
+            Save Current Session
+          </button>
+          <label class="session-toggle">
+            <input type="checkbox" id="autoSaveToggle" checked />
+            <span>Auto-save every 5 min</span>
+          </label>
+        </div>
+        
+        <div class="session-section">
+          <h3>🔴 Current Session</h3>
+          <div class="session-current">
+            <div class="session-info">
+              <span id="currentSessionTabs">15 tabs</span>
+              <span id="currentSessionTime">Active now</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-section">
+          <h3>📸 Auto-Snapshots</h3>
+          <div class="session-list" id="snapshotsList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="session-section">
+          <h3>💼 Saved Sessions</h3>
+          <div class="session-list" id="savedSessionsList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Bookmarks Panel -->
+    <div class="smart-bookmarks-panel hidden" id="smartBookmarksPanel">
+      <div class="panel-header">
+        <h2>🔖 Smart Bookmarks</h2>
+        <button class="panel-close" id="closeSmartBookmarks">×</button>
+      </div>
+      <div class="panel-content">
+        <div class="bookmarks-search-bar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input type="text" id="smartBookmarkSearch" placeholder="Search by title, URL, tags, or content..." />
+        </div>
+
+        <div class="bookmarks-filters">
+          <button class="filter-btn active" data-filter="all">All (<span id="allCount">0</span>)</button>
+          <button class="filter-btn" data-filter="recent">⏰ Recent</button>
+          <button class="filter-btn" data-filter="mostVisited">🔥 Most Visited</button>
+          <button class="filter-btn" data-filter="untagged">🏷️ Untagged</button>
+        </div>
+
+        <div class="bookmarks-categories" id="bookmarksCategories">
+          <!-- Auto-generated categories -->
+        </div>
+
+        <div class="bookmarks-list-container">
+          <div class="bookmarks-grid" id="smartBookmarksList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Manager Panel -->
+    <div class="password-manager-panel hidden" id="passwordManagerPanel">
+      <div class="panel-header">
+        <h2>🔐 Password Manager</h2>
+        <button class="panel-close" id="closePasswordManager">×</button>
+      </div>
+      <div class="panel-content">
+        <div class="password-unlock" id="passwordUnlock">
+          <div class="unlock-form">
+            <h3>🔒 Unlock Password Vault</h3>
+            <input type="password" id="masterPassword" placeholder="Enter master password" />
+            <button class="btn-primary" id="unlockVault">Unlock</button>
+            <p class="unlock-hint">First time? Create a master password to secure your vault.</p>
+          </div>
+        </div>
+
+        <div class="password-vault hidden" id="passwordVault">
+          <div class="password-search-bar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input type="text" id="passwordSearch" placeholder="Search passwords..." />
+            <button class="btn-secondary" id="addPasswordBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Add Password
+            </button>
+          </div>
+
+          <div class="password-stats">
+            <div class="stat-card weak" id="weakPasswordsCard">
+              <div class="stat-icon">⚠️</div>
+              <div class="stat-info">
+                <h4>Weak Passwords</h4>
+                <p><span id="weakCount">0</span> passwords need updating</p>
+              </div>
+            </div>
+            <div class="stat-card reused" id="reusedPasswordsCard">
+              <div class="stat-icon">🔄</div>
+              <div class="stat-info">
+                <h4>Reused Passwords</h4>
+                <p><span id="reusedCount">0</span> passwords reused</p>
+              </div>
+            </div>
+            <div class="stat-card breached" id="breachedPasswordsCard">
+              <div class="stat-icon">🚨</div>
+              <div class="stat-info">
+                <h4>Breached</h4>
+                <p><span id="breachedCount">0</span> found in data breaches</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="password-list" id="passwordList">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Password Generator -->
+          <div class="password-generator" id="passwordGenerator">
+            <h3>🎲 Password Generator</h3>
+            <div class="generated-password-display">
+              <input type="text" id="generatedPassword" readonly />
+              <button class="btn-icon" id="copyGenerated" title="Copy">📋</button>
+              <button class="btn-icon" id="regeneratePassword" title="Generate New">🔄</button>
+            </div>
+            <div class="generator-options">
+              <label>
+                <span>Length: <strong id="passwordLength">16</strong></span>
+                <input type="range" id="passwordLengthSlider" min="8" max="32" value="16" />
+              </label>
+              <label>
+                <input type="checkbox" id="includeUppercase" checked />
+                <span>Uppercase (A-Z)</span>
+              </label>
+              <label>
+                <input type="checkbox" id="includeLowercase" checked />
+                <span>Lowercase (a-z)</span>
+              </label>
+              <label>
+                <input type="checkbox" id="includeNumbers" checked />
+                <span>Numbers (0-9)</span>
+              </label>
+              <label>
+                <input type="checkbox" id="includeSymbols" checked />
+                <span>Symbols (!@#$%)</span>
+              </label>
+            </div>
+            <div class="password-strength" id="passwordStrength">
+              <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill"></div>
+              </div>
+              <span id="strengthText">Strong</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sync Panel -->
+    <div class="sync-panel hidden" id="syncPanel">
+      <div class="panel-header">
+        <h2>☁️ Universal Sync</h2>
+        <button class="panel-close" id="closeSyncPanel">×</button>
+      </div>
+      <div class="panel-content">
+        <div class="sync-status-card">
+          <div class="sync-icon" id="syncIcon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+            </svg>
+          </div>
+          <div class="sync-info">
+            <h3>Sync Status</h3>
+            <p class="sync-time">Last synced: <span id="lastSyncTime">Never</span></p>
+            <button class="btn-primary" id="syncNowBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+              </svg>
+              Sync Now
+            </button>
+          </div>
+        </div>
+
+        <div class="sync-section">
+          <h3>📱 Your Devices</h3>
+          <div class="device-list" id="deviceList">
+            <div class="device-item active">
+              <div class="device-icon">💻</div>
+              <div class="device-info">
+                <h4>Desktop (Current)</h4>
+                <p>Windows • Active now</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sync-section">
+          <h3>⚙️ Sync Settings</h3>
+          <div class="sync-options">
+            <label>
+              <input type="checkbox" id="syncBookmarks" checked />
+              <span>🔖 Bookmarks</span>
+            </label>
+            <label>
+              <input type="checkbox" id="syncHistory" checked />
+              <span>📜 History</span>
+            </label>
+            <label>
+              <input type="checkbox" id="syncPasswords" checked />
+              <span>🔐 Passwords</span>
+            </label>
+            <label>
+              <input type="checkbox" id="syncExtensions" checked />
+              <span>🧩 Extensions</span>
+            </label>
+            <label>
+              <input type="checkbox" id="syncSessions" checked />
+              <span>💾 Sessions</span>
+            </label>
+            <label>
+              <input type="checkbox" id="syncSettings" checked />
+              <span>⚙️ Settings</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="sync-section">
+          <div class="sync-encryption-info">
+            <div class="encryption-badge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+              <div>
+                <h4>🔐 End-to-End Encrypted</h4>
+                <p>Your data is encrypted before leaving your device. Not even we can read it.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>
