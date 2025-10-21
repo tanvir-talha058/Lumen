@@ -1,6 +1,11 @@
 node_modules
 dist
+dist-packaged
+electron-dist
+Lumen-Portable-v1.0
 src-tauri/target
 .vscode
 *.log
 .DS_Store
+*.zip
+*.exe
