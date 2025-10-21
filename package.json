@@ -2,20 +2,61 @@
   "name": "lumen-browser",
   "version": "0.1.0",
   "description": "A lightweight, minimal, elegant web browser",
-  "type": "module",
+  "main": "electron-main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "electron:start": "electron .",
+    "electron:build": "electron-builder --win --x64",
+    "package": "npm run build && electron-packager . \"Lumen Browser\" --platform=win32 --arch=x64 --out=dist-packaged --overwrite --icon=src-tauri/icons/icon.ico"
   },
-  "dependencies": {
-    "@tauri-apps/api": "^1.5.3"
+  "build": {
+    "appId": "com.lumen.browser",
+    "productName": "Lumen Browser",
+    "directories": {
+      "output": "electron-dist",
+      "buildResources": "src-tauri/icons"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "index.html",
+        "to": "index.html"
+      },
+      {
+        "from": "src",
+        "to": "src"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src-tauri/icons/icon.ico"
+    },
+    "portable": {
+      "artifactName": "Lumen-Browser-Portable.exe"
+    }
   },
   "devDependencies": {
+    "@tauri-apps/api": "^1.5.3",
     "@tauri-apps/cli": "^1.5.9",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0",
+    "electron-packager": "^17.1.2",
     "vite": "^5.0.0"
   }
 }

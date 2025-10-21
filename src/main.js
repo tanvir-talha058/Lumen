@@ -123,6 +123,7 @@ async function init() {
   setupExtensions();
   setupImageZoom();
   setupPopupBlocker();
+  setupElectronListeners(); // Add Electron IPC listeners
   
   renderBookmarks();
   renderHistory();
@@ -550,6 +551,14 @@ function createTab(url = '', title = 'New Tab') {
   
   if (url) {
     navigate(url);
+  } else if (typeof require !== 'undefined') {
+    // In Electron, load Google as default for new tabs
+    try {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('navigate-to', 'https://www.google.com');
+    } catch (e) {
+      console.log('Not running in Electron');
+    }
   }
   
   return tab.id;
@@ -611,6 +620,16 @@ function switchToTab(tabId) {
     document.getElementById('omnibox').value = tab.url || '';
     updateBookmarkButton(checkIfBookmarked(tab.url));
     updateSecurityIcon(tab.url);
+    
+    // If running in Electron, navigate BrowserView to tab's URL
+    if (typeof require !== 'undefined' && tab.url) {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('navigate-to', tab.url);
+      } catch (e) {
+        console.log('Not running in Electron');
+      }
+    }
   }
 }
 
@@ -773,20 +792,69 @@ function navigate(input) {
   updateBookmarkButton(checkIfBookmarked(url));
   updateSecurityIcon(url);
   
-  // Simulate page loading
+  // Check if running in Electron and send navigation command
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('navigate-to', url);
+      showNotification(`Loading ${extractDomain(url)}...`, 'success');
+      return; // Electron will handle the actual navigation
+    } catch (e) {
+      console.log('Not running in Electron with node integration');
+    }
+  }
+  
+  // Fallback: Simulate page loading with better visual feedback (for web version)
   const container = document.querySelector(`.webview-container[data-tab-id="${activeTab.id}"]`);
   if (container) {
     container.innerHTML = `
-      <div style="padding: 60px 40px; text-align: center;">
-        <div class="loading-spinner"></div>
-        <h2 style="margin-top: 24px; color: var(--text-primary);">Loading...</h2>
-        <p style="margin-top: 12px; color: var(--text-secondary);">${escapeHtml(url)}</p>
-        <p style="margin-top: 24px; color: var(--text-tertiary); font-size: 14px;">
-      In a full implementation, this would load the actual webpage using WebView2/WKWebView/WebKitGTK
-    </p>
+      <div style="padding: 60px 40px; text-align: center; max-width: 800px; margin: 0 auto;">
+        <div style="font-size: 64px; margin-bottom: 24px; animation: fadeIn 0.3s ease;">🌐</div>
+        <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 28px;">
+          Navigating to...
+        </h2>
+        <div style="padding: 16px 24px; background: var(--chrome-surface); border-radius: 12px; margin-bottom: 24px; border: 2px solid var(--chrome-accent-light);">
+          <code style="font-size: 18px; color: var(--chrome-accent); word-break: break-all; font-weight: 500;">
+            ${escapeHtml(url)}
+          </code>
+        </div>
+        <div style="background: linear-gradient(135deg, rgba(26,115,232,0.1) 0%, rgba(26,115,232,0.05) 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+          <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; font-size: 16px;">
+            <strong>📌 This is a browser UI demonstration</strong><br/>
+            To actually browse websites, this needs a browser engine:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0;">
+            <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
+              <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
+              <strong style="display: block; margin-bottom: 4px;">Tauri + WebView2</strong>
+              <small style="color: var(--text-tertiary);">Smallest size (~8MB)</small>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
+              <div style="font-size: 24px; margin-bottom: 8px;">🔷</div>
+              <strong style="display: block; margin-bottom: 4px;">Electron</strong>
+              <small style="color: var(--text-tertiary);">Full Chromium (~85MB)</small>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
+              <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
+              <strong style="display: block; margin-bottom: 4px;">Custom WebView</strong>
+              <small style="color: var(--text-tertiary);">Platform-specific</small>
+            </div>
+          </div>
+        </div>
+        <div style="background: var(--chrome-surface); padding: 20px; border-radius: 12px; border-left: 4px solid var(--chrome-accent);">
+          <p style="margin: 0; color: var(--text-secondary); font-size: 15px;">
+            ✨ <strong>All features work perfectly:</strong> Vertical Tabs, Sessions, Bookmarks, Password Manager, and Sync!
+          </p>
+        </div>
+        <p style="margin-top: 24px; color: var(--text-tertiary); font-size: 13px;">
+          Try the toolbar buttons (📂 Sessions, 🏷️ Bookmarks, 🔐 Passwords) to see working features!
+        </p>
       </div>
     `;
   }
+  
+  // Show toast notification
+  showNotification(`Search executed: "${input.substring(0, 50)}${input.length > 50 ? '...' : ''}"`, 'info');
 }function updateSecurityIcon(url) {
   const icon = document.getElementById('securityIcon');
   if (url.startsWith('https://')) {
@@ -802,14 +870,46 @@ function navigate(input) {
 }
 
 function goBack() {
+  // Check if running in Electron
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('go-back');
+      return;
+    } catch (e) {
+      console.log('Not running in Electron');
+    }
+  }
   showNotification('History navigation will be implemented with real WebView', 'info');
 }
 
 function goForward() {
+  // Check if running in Electron
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('go-forward');
+      return;
+    } catch (e) {
+      console.log('Not running in Electron');
+    }
+  }
   showNotification('History navigation will be implemented with real WebView', 'info');
 }
 
 function refresh() {
+  // Check if running in Electron
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('reload-page');
+      showNotification('Page refreshed', 'success');
+      return;
+    } catch (e) {
+      console.log('Not running in Electron');
+    }
+  }
+  
   const activeTab = state.tabs.find(t => t.active);
   if (activeTab && activeTab.url) {
     navigate(activeTab.url);
@@ -2526,8 +2626,10 @@ const passwordManager = {
     this.masterPassword = password;
     this.isUnlocked = true;
 
-    document.querySelector('.password-unlock')?.style.display = 'none';
-    document.querySelector('.password-vault')?.style.display = 'block';
+    const unlockEl = document.querySelector('.password-unlock');
+    const vaultEl = document.querySelector('.password-vault');
+    if (unlockEl) unlockEl.style.display = 'none';
+    if (vaultEl) vaultEl.style.display = 'block';
 
     this.renderPasswords();
     this.updateStats();
@@ -2862,3 +2964,79 @@ document.addEventListener('DOMContentLoaded', function() {
     console.error('Error initializing TOP 5 features:', error);
   }
 });
+
+// ============================================================================
+// ELECTRON INTEGRATION
+// ============================================================================
+
+function setupElectronListeners() {
+  // Check if running in Electron
+  if (typeof require === 'undefined') {
+    console.log('Not running in Electron - browser navigation disabled');
+    return;
+  }
+  
+  try {
+    const { ipcRenderer } = require('electron');
+    
+    // Listen for URL changes from Electron BrowserView
+    ipcRenderer.on('url-changed', (event, url) => {
+      const activeTab = state.tabs.find(t => t.active);
+      if (activeTab) {
+        activeTab.url = url;
+        activeTab.title = extractDomain(url);
+        renderTabs();
+        
+        // Add to history
+        addToHistory(url, activeTab.title);
+        
+        // Update omnibox
+        const omnibox = document.getElementById('omnibox');
+        if (omnibox && document.activeElement !== omnibox) {
+          omnibox.value = url;
+        }
+        
+        updateSecurityIcon(url);
+        updateBookmarkButton(checkIfBookmarked(url));
+      }
+    });
+    
+    // Listen for page title changes
+    ipcRenderer.on('title-changed', (event, title) => {
+      const activeTab = state.tabs.find(t => t.active);
+      if (activeTab) {
+        activeTab.title = title;
+        renderTabs();
+      }
+    });
+    
+    // Listen for favicon changes
+    ipcRenderer.on('favicon-changed', (event, favicon) => {
+      const activeTab = state.tabs.find(t => t.active);
+      if (activeTab) {
+        activeTab.favicon = favicon;
+        renderTabs();
+      }
+    });
+    
+    // Listen for loading state
+    ipcRenderer.on('loading-start', () => {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      if (loadingIndicator) {
+        loadingIndicator.style.display = 'block';
+      }
+    });
+    
+    ipcRenderer.on('loading-stop', () => {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
+      }
+    });
+    
+    console.log('✅ Electron IPC listeners initialized');
+    console.log('✅ Navigation buttons will use goBack(), goForward(), refresh() functions');
+  } catch (error) {
+    console.log('Not running in Electron with node integration:', error.message);
+  }
+}
