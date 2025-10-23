@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   clearScreen: false,
+  // IMPORTANT: Use relative paths in built index.html so Electron can load assets from file://
+  base: './',
   server: {
     port: 1420,
     strictPort: true,

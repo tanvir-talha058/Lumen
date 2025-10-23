@@ -4,6 +4,8 @@ const fs = require('fs');
 
 let mainWindow;
 let browserView;
+let currentPartition = 'persist:lumen-default'; // default persisted profile partition
+let sidebarCollapsed = false; // reflects vertical tabs collapsed state from renderer
 const viewHistory = [];
 let currentHistoryIndex = -1;
 
@@ -32,7 +34,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: true
+      webSecurity: true,
+      partition: currentPartition
     }
   });
 
@@ -42,13 +45,15 @@ function createWindow() {
   // Position browser view below the toolbar (adjust based on your UI)
   const updateBounds = () => {
     const { width, height } = mainWindow.getContentBounds();
+    const xOffset = sidebarCollapsed ? 0 : 72; // 0 when rail collapsed, 72 when expanded
+    const yOffset = 78; // top chrome height (topbar + navbar)
     browserView.setBounds({
-      x: 72, // compact vertical tabs rail
-      y: 78, // top chrome height (topbar + navbar)
-      width: width - 72,
-      height: height - 78
+      x: xOffset,
+      y: yOffset,
+      width: Math.max(0, width - xOffset),
+      height: Math.max(0, height - yOffset)
     });
-    console.log(`📐 BrowserView bounds updated: ${width - 72}x${height - 78}`);
+    console.log(`📐 BrowserView bounds updated: ${width - xOffset}x${height - yOffset} (x=${xOffset}, y=${yOffset})`);
   };
 
   updateBounds();
@@ -84,6 +89,44 @@ function createWindow() {
     console.error('❌ Failed to load UI:', errorCode, errorDescription);
   });
 
+  // Helper to attach all webContents event listeners to a given BrowserView
+  const attachViewEventHandlers = (view) => {
+    // Send navigation updates to UI
+    view.webContents.on('did-start-loading', () => {
+      mainWindow.webContents.send('loading-start');
+    });
+
+    view.webContents.on('did-stop-loading', () => {
+      mainWindow.webContents.send('loading-stop');
+    });
+
+    view.webContents.on('did-navigate', (event, url) => {
+      mainWindow.webContents.send('url-changed', url);
+    });
+
+    view.webContents.on('did-navigate-in-page', (event, url) => {
+      mainWindow.webContents.send('url-changed', url);
+    });
+
+    view.webContents.on('page-title-updated', (event, title) => {
+      mainWindow.webContents.send('title-changed', title);
+    });
+
+    view.webContents.on('page-favicon-updated', (event, favicons) => {
+      if (favicons && favicons.length > 0) {
+        mainWindow.webContents.send('favicon-changed', favicons[0]);
+      }
+    });
+
+    // Handle new windows inside same view
+    view.webContents.setWindowOpenHandler(({ url }) => {
+      navigateTo(url);
+      return { action: 'deny' };
+    });
+  };
+
+  attachViewEventHandlers(browserView);
+
   // Handle navigation requests from UI
   ipcMain.on('navigate-to', (event, url) => {
     navigateTo(url);
@@ -113,37 +156,64 @@ function createWindow() {
     browserView.webContents.stop();
   });
 
-  // Send navigation updates to UI
-  browserView.webContents.on('did-start-loading', () => {
-    mainWindow.webContents.send('loading-start');
+  // Handle sidebar collapsed state changes from renderer to update BrowserView bounds
+  ipcMain.on('sidebar-collapsed-changed', (event, isCollapsed) => {
+    sidebarCollapsed = !!isCollapsed;
+    updateBounds();
   });
 
-  browserView.webContents.on('did-stop-loading', () => {
-    mainWindow.webContents.send('loading-stop');
-  });
+  // Switch BrowserView when profile/guest mode changes
+  const switchProfileSession = ({ profileId = 'default', guestMode = false } = {}) => {
+    try {
+      const oldView = browserView;
+      const currentURL = oldView?.webContents.getURL();
 
-  browserView.webContents.on('did-navigate', (event, url) => {
-    mainWindow.webContents.send('url-changed', url);
-  });
+      // Decide partition: persisted for standard profiles, in-memory for guest
+      currentPartition = guestMode
+        ? `guest-${Date.now()}` // in-memory (no 'persist:' prefix)
+        : `persist:lumen-${profileId || 'default'}`;
 
-  browserView.webContents.on('did-navigate-in-page', (event, url) => {
-    mainWindow.webContents.send('url-changed', url);
-  });
+      console.log(`👤 Switching profile session → partition: ${currentPartition}`);
 
-  browserView.webContents.on('page-title-updated', (event, title) => {
-    mainWindow.webContents.send('title-changed', title);
-  });
+      // Remove old view
+      if (oldView) {
+        try { mainWindow.removeBrowserView(oldView); } catch {}
+      }
 
-  browserView.webContents.on('page-favicon-updated', (event, favicons) => {
-    if (favicons && favicons.length > 0) {
-      mainWindow.webContents.send('favicon-changed', favicons[0]);
+      // Create new view with updated partition
+      browserView = new BrowserView({
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true,
+          webSecurity: true,
+          partition: currentPartition
+        }
+      });
+
+      // Attach and wire up events
+      mainWindow.setBrowserView(browserView);
+      attachViewEventHandlers(browserView);
+      updateBounds();
+
+      // Load last URL if available, else go home
+      if (currentURL && /^https?:/i.test(currentURL)) {
+        browserView.webContents.loadURL(currentURL);
+      } else {
+        browserView.webContents.loadURL('https://www.google.com');
+      }
+
+      // Destroy old view after switch
+      if (oldView) {
+        try { oldView.webContents.destroy(); } catch {}
+      }
+    } catch (err) {
+      console.error('❌ Failed to switch profile session:', err);
     }
-  });
+  };
 
-  // Handle new windows
-  browserView.webContents.setWindowOpenHandler(({ url }) => {
-    navigateTo(url);
-    return { action: 'deny' };
+  ipcMain.on('profile-changed', (event, payload) => {
+    switchProfileSession(payload || {});
   });
 
   // Initial load

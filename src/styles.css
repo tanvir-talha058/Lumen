@@ -415,9 +415,20 @@ body {
   color: var(--chrome-text);
 }
 
-.chrome-omnibox-btn.bookmarked .bookmark-icon {
-  fill: #fbbc04;
+/* Outline icon system */
+.icon-ol {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+
+/* Bookmark toggle (fill on bookmarked) */
+.bookmark-fill { opacity: 0; fill: currentColor; }
+.chrome-omnibox-btn.bookmarked .bookmark-fill { opacity: 1; color: #fbbc04; }
 
 /* Omnibox Suggestions */
 .chrome-suggestions {
@@ -501,6 +512,17 @@ body {
   color: var(--chrome-text-secondary);
   transition: all var(--chrome-transition-fast);
   margin: 0 2px;
+}
+
+/* Minimal outline icons for toolbar */
+.chrome-toolbar-btn svg.toolbar-icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .chrome-toolbar-btn:hover {
@@ -1948,7 +1970,7 @@ body {
 }
 
 /* =====================================================
-   VERTICAL TABS SIDEBAR - Enhanced Modern Design
+   VERTICAL TABS SIDEBAR - Icon-Only Compact Design
    ===================================================== */
 
 .vertical-tabs-sidebar {
@@ -1956,7 +1978,7 @@ body {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 72px; /* compact vertical tab rail */
+  width: 72px;
   background: var(--chrome-surface);
   border-right: 1px solid var(--chrome-divider);
   display: flex;
@@ -1964,6 +1986,7 @@ body {
   z-index: 1000;
   transition: transform var(--chrome-transition);
   box-shadow: var(--chrome-shadow-md);
+  overflow: hidden; /* Prevent any content overflow */
 }
 
 .vertical-tabs-sidebar.collapsed {
@@ -1972,11 +1995,13 @@ body {
 
 .vertical-tabs-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm); /* tighter header */
+  gap: 8px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--chrome-divider);
   background: var(--chrome-bg);
+  flex-shrink: 0; /* Prevent header from collapsing */
 }
 
 .vertical-tabs-toggle {
@@ -1984,14 +2009,15 @@ body {
   border: none;
   color: var(--chrome-text-secondary);
   cursor: pointer;
-  padding: var(--space-sm);
+  padding: 8px;
   border-radius: var(--chrome-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--chrome-transition-fast);
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
 .vertical-tabs-toggle:hover {
@@ -2005,24 +2031,7 @@ body {
 }
 
 .vertical-tabs-search {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid var(--chrome-divider);
-  border-radius: 20px;
-  background: var(--chrome-bg);
-  color: var(--chrome-text);
-  font-size: 13px;
-  transition: all var(--chrome-transition-fast);
-}
-
-.vertical-tabs-search:focus {
-  outline: none;
-  border-color: var(--chrome-accent);
-  box-shadow: 0 0 0 3px var(--chrome-accent-light);
-}
-
-.vertical-tabs-search::placeholder {
-  color: var(--chrome-text-tertiary);
+  display: none; /* Hidden in icon-only compact mode */
 }
 
 .vertical-tabs-settings {
@@ -2030,14 +2039,15 @@ body {
   border: none;
   color: var(--chrome-text-secondary);
   cursor: pointer;
-  padding: var(--space-sm);
+  padding: 8px;
   border-radius: var(--chrome-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--chrome-transition-fast);
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
 .vertical-tabs-settings:hover {
@@ -2049,21 +2059,47 @@ body {
 .vertical-tabs-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-sm);
+  overflow-x: hidden;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Custom scrollbar for vertical tabs */
+.vertical-tabs-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.vertical-tabs-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vertical-tabs-list::-webkit-scrollbar-thumb {
+  background: var(--chrome-divider);
+  border-radius: 2px;
+}
+
+.vertical-tabs-list::-webkit-scrollbar-thumb:hover {
+  background: var(--chrome-text-tertiary);
 }
 
 .vertical-tab {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: 8px 12px;
-  margin-bottom: var(--space-xs);
+  justify-content: center;
+  padding: 10px;
+  margin-bottom: 4px;
   border-radius: var(--chrome-radius-md);
   cursor: pointer;
   transition: all var(--chrome-transition-fast);
   position: relative;
   background: var(--chrome-bg);
   border: 1px solid transparent;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
 }
 
 .vertical-tab::before {
@@ -2082,7 +2118,7 @@ body {
 .vertical-tab:hover {
   background: var(--chrome-surface);
   border-color: var(--chrome-divider);
-  transform: translateX(4px);
+  transform: scale(1.05);
 }
 
 .vertical-tab.active {
@@ -2095,109 +2131,62 @@ body {
   height: 70%;
 }
 
-.vertical-tab.active .tab-favicon,
-.vertical-tab.active .tab-close {
-  color: var(--chrome-accent);
-}
-
 .vertical-tab .tab-favicon {
-  font-size: 16px;
-  width: 20px;
-  height: 20px;
+  font-size: 22px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  filter: grayscale(0.3);
+  filter: grayscale(0.2);
   transition: filter var(--chrome-transition-fast);
 }
 
 .vertical-tab:hover .tab-favicon,
 .vertical-tab.active .tab-favicon {
   filter: grayscale(0);
+  transform: scale(1.1);
 }
 
+/* Hide all text elements in icon-only mode */
 .vertical-tab .tab-info {
-  flex: 1;
-  min-width: 0;
+  display: none;
 }
 
 .vertical-tab .tab-title {
-  font-size: 13px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--chrome-text);
-  line-height: 1.25;
+  display: none;
 }
 
 .vertical-tab .tab-url {
-  font-size: 12px;
-  color: var(--chrome-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 2px;
-  line-height: 1.3;
-}
-
-.vertical-tab.active .tab-title {
-  color: var(--chrome-accent);
-  font-weight: 600;
-}
-
-.vertical-tab.active .tab-url {
-  color: var(--chrome-accent);
-  opacity: 0.8;
+  display: none;
 }
 
 .vertical-tab .tab-close {
-  opacity: 0;
-  background: transparent;
-  border: none;
-  color: var(--chrome-text-secondary);
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 18px;
-  transition: all var(--chrome-transition-fast);
-}
-
-.vertical-tab:hover .tab-close {
-  opacity: 1;
-}
-
-.vertical-tab .tab-close:hover {
-  background: var(--chrome-error);
-  color: white;
-  transform: rotate(90deg);
-}
-
-.vertical-tab.active .tab-close {
-  opacity: 1;
+  display: none;
 }
 
 .vertical-tab-new {
-  margin: var(--space-sm);
-  padding: 8px;
+  margin: 8px;
+  padding: 12px;
   background: var(--chrome-bg);
   border: 2px dashed var(--chrome-divider);
   border-radius: var(--chrome-radius-md);
   color: var(--chrome-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
+  width: 52px;
+  height: 52px;
   transition: all var(--chrome-transition-fast);
+  flex-shrink: 0;
+}
+
+.vertical-tab-new svg {
+  width: 20px;
+  height: 20px;
 }
 
 .vertical-tab-new:hover {
@@ -2205,12 +2194,12 @@ body {
   color: white;
   border-color: var(--chrome-accent);
   border-style: solid;
-  transform: translateY(-2px);
+  transform: scale(1.05);
   box-shadow: var(--chrome-shadow-md);
 }
 
 .vertical-tab-new:active {
-  transform: translateY(0);
+  transform: scale(0.95);
 }
 
 /* Adjust main content when vertical tabs are visible */

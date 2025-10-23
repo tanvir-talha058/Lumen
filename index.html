@@ -53,7 +53,7 @@
 
       <!-- Window Controls Area -->
       <div class="chrome-window-controls">
-        <button class="chrome-profile" id="profileBtn" title="Profile">
+        <button class="chrome-profile" id="profileBtnTop" title="Profile">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
@@ -70,23 +70,25 @@
     <div class="chrome-navbar">
       <!-- Navigation Buttons -->
       <button class="chrome-nav-btn" id="backBtn" disabled title="Back (Alt+Left)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
       <button class="chrome-nav-btn" id="forwardBtn" disabled title="Forward (Alt+Right)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+        <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 5l7 7-7 7"/>
         </svg>
       </button>
       <button class="chrome-nav-btn" id="refreshBtn" title="Reload (Ctrl+R)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 6v6h-6"/>
+          <path d="M20 12a8 8 0 11-2.34-5.66L20 6"/>
         </svg>
       </button>
       <button class="chrome-nav-btn" id="homeBtn" title="Home">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 11l9-7 9 7"/>
+          <path d="M5 10v10h14V10"/>
         </svg>
       </button>
 
@@ -110,15 +112,42 @@
         />
         <div class="chrome-omnibox-actions">
           <button class="chrome-omnibox-btn" id="voiceSearchBtn" title="Search with voice">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+            <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="9" y="3" width="6" height="12" rx="3"/>
+              <path d="M5 11a7 7 0 0014 0"/>
+              <path d="M12 18v3"/>
             </svg>
           </button>
           <button class="chrome-omnibox-btn" id="bookmarkBtn" title="Bookmark (Ctrl+D)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="bookmark-icon">
-              <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/>
+            <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 4h12a2 2 0 0 1 2 2v14l-8-3-8 3V6a2 2 0 0 1 2-2z"/>
+              <path d="M12 8l1.76 3.57 3.94.57-2.85 2.78.67 3.91L12 16.9l-3.52 1.83.67-3.91-2.85-2.78 3.94-.57L12 8z" class="bookmark-fill"/>
             </svg>
           </button>
+          <button class="chrome-omnibox-btn" id="profileBtn" title="Profiles">
+            <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="3"/>
+              <path d="M5 20a7 7 0 0114 0"/>
+            </svg>
+          </button>
+          <div id="profileMenu" style="display:none; position:absolute; right:12px; top:56px; background: var(--chrome-surface); border: 1px solid var(--chrome-border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 12px; width: 240px; z-index: 10000;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+              <div style="width:32px; height:32px; border-radius:50%; background: #e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; font-weight:600;">U</div>
+              <div>
+                <div style="font-weight:600;">User Profile</div>
+                <div style="font-size:12px; color: var(--text-tertiary);" id="profileModeLabel">Standard mode</div>
+              </div>
+            </div>
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; cursor:pointer;">
+              <span>Guest mode</span>
+              <input type="checkbox" id="guestModeToggle" />
+            </label>
+            <div style="height:1px; background: var(--chrome-border); margin:8px 0;"></div>
+            <button id="manageProfilesBtn" class="chrome-omnibox-btn" style="width:100%; justify-content:flex-start; gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              Manage profiles (coming soon)
+            </button>
+          </div>
         </div>
 
         <!-- Omnibox Suggestions Dropdown -->
@@ -130,25 +159,39 @@
       <!-- Right-side Actions -->
       <div class="chrome-toolbar-actions">
         <button class="chrome-toolbar-btn" onclick="document.querySelector('.session-manager-panel').style.display='flex'" title="Session Manager (Ctrl+Shift+S)">
-          <span style="font-size: 18px;">💾</span>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="5" width="16" height="14" rx="2"/>
+            <path d="M8 9h8M6 13h12M8 17h8"/>
+          </svg>
         </button>
         <button class="chrome-toolbar-btn" onclick="document.querySelector('.smart-bookmarks-panel').style.display='flex'" title="Smart Bookmarks (Ctrl+Shift+B)">
-          <span style="font-size: 18px;">🔖</span>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 4h10a2 2 0 0 1 2 2v14l-7-3-7 3V6a2 2 0 0 1 2-2z"/>
+          </svg>
         </button>
         <button class="chrome-toolbar-btn" onclick="document.querySelector('.password-manager-panel').style.display='flex'" title="Password Manager (Ctrl+Shift+P)">
-          <span style="font-size: 18px;">🔐</span>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+            <circle cx="12" cy="15.5" r="1"/>
+          </svg>
         </button>
         <button class="chrome-toolbar-btn" onclick="document.querySelector('.sync-panel').style.display='flex'" title="Sync Settings (Ctrl+Shift+Y)">
-          <span style="font-size: 18px;">☁️</span>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19.5 10A4.5 4.5 0 0015 6.5a6.5 6.5 0 00-12 .5A4 4 0 006 19h11.5a3.5 3.5 0 002-6.5z"/>
+            <path d="M9 13l2 2 4-4"/>
+          </svg>
         </button>
         <button class="chrome-toolbar-btn" id="extensionsBtn" title="Extensions">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 3h4a2 2 0 012 2v2h2a2 2 0 012 2v4h-2l-1 2-2-1-1 2-2-1-1 2-2-1V5a2 2 0 012-2z"/>
           </svg>
         </button>
         <button class="chrome-toolbar-btn chrome-has-badge" id="downloadsBtn" title="Downloads (Ctrl+J)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          <svg class="toolbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v10"/>
+            <path d="M8.5 10.5L12 14l3.5-3.5"/>
+            <path d="M5 19h14"/>
           </svg>
           <span class="chrome-badge" id="downloadsBadge" style="display: none;">0</span>
         </button>
@@ -250,7 +293,12 @@
           <span class="chrome-menu-shortcut">Ctrl+N</span>
         </div>
         <div class="chrome-menu-item" id="newIncognitoMenu">
-          <span class="chrome-menu-icon">🕶️</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12c0-1.1.9-2 2-2h1.5a3.5 3.5 0 006.9 0H18c1.1 0 2 .9 2 2v1c0 1.1-.9 2-2 2h-0.5a3.5 3.5 0 01-6.9 0H4c-1.1 0-2-.9-2-2v-1z"/>
+              <path d="M7 10c0 1.38-1.12 2.5-2.5 2.5S2 11.38 2 10" opacity="0.0"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">New Incognito window</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+N</span>
         </div>
@@ -258,17 +306,32 @@
       <div class="chrome-menu-divider"></div>
       <div class="chrome-menu-section">
         <div class="chrome-menu-item" id="historyMenu">
-          <span class="chrome-menu-icon">🕒</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 7v6l4 2"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">History</span>
           <span class="chrome-menu-shortcut">Ctrl+H</span>
         </div>
         <div class="chrome-menu-item" id="downloadsMenu">
-          <span class="chrome-menu-icon">⬇️</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Downloads</span>
           <span class="chrome-menu-shortcut">Ctrl+J</span>
         </div>
         <div class="chrome-menu-item" id="bookmarksMenu">
-          <span class="chrome-menu-icon">⭐</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Bookmarks</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+B</span>
         </div>
@@ -276,17 +339,34 @@
       <div class="chrome-menu-divider"></div>
       <div class="chrome-menu-section">
         <div class="chrome-menu-item" id="findMenu">
-          <span class="chrome-menu-icon">🔍</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Find...</span>
           <span class="chrome-menu-shortcut">Ctrl+F</span>
         </div>
         <div class="chrome-menu-item" id="printMenu">
-          <span class="chrome-menu-icon">🖨️</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="9" width="12" height="7" rx="2"/>
+              <path d="M6 15v4h12v-4"/>
+              <path d="M8 3h8v4H8z"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Print...</span>
           <span class="chrome-menu-shortcut">Ctrl+P</span>
         </div>
         <div class="chrome-menu-item chrome-menu-item-submenu" id="moreToolsMenu">
-          <span class="chrome-menu-icon">🔧</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 10.3a4 4 0 010 5.66l-1.41 1.41a2 2 0 01-2.83 0l-1.41-1.41a4 4 0 010-5.66l1.41-1.41a2 2 0 012.83 0l1.41 1.41z"/>
+              <path d="M19 4l0 3"/>
+              <path d="M5 4l0 3"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">More tools</span>
           <span class="chrome-menu-arrow">›</span>
         </div>
@@ -294,22 +374,42 @@
       <div class="chrome-menu-divider"></div>
       <div class="chrome-menu-section">
         <div class="chrome-menu-item" onclick="document.querySelector('.session-manager-panel').style.display='flex'">
-          <span class="chrome-menu-icon">💾</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2z"/>
+              <path d="M12 11v6"/>
+              <circle cx="12" cy="7" r="1"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Session Manager</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+S</span>
         </div>
         <div class="chrome-menu-item" onclick="document.querySelector('.smart-bookmarks-panel').style.display='flex'">
-          <span class="chrome-menu-icon">🔖</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Smart Bookmarks</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+B</span>
         </div>
         <div class="chrome-menu-item" onclick="document.querySelector('.password-manager-panel').style.display='flex'">
-          <span class="chrome-menu-icon">🔐</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <path d="M7 11V8a5 5 0 0110 0v3"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Password Manager</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+P</span>
         </div>
         <div class="chrome-menu-item" onclick="document.querySelector('.sync-panel').style.display='flex'">
-          <span class="chrome-menu-icon">☁️</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 15.5A4.5 4.5 0 0015.5 11 6.5 6.5 0 009 12.5 4 4 0 006 19h11.5a3.5 3.5 0 002-3.5z"/>
+              <path d="M8 13l2 2 4-4"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Sync Settings</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+Y</span>
         </div>
@@ -317,7 +417,14 @@
       <div class="chrome-menu-divider"></div>
       <div class="chrome-menu-section">
         <div class="chrome-menu-item" id="extensionsMenuBtn">
-          <span class="chrome-menu-icon">🧩</span>
+          <span class="chrome-menu-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 3h4a2 2 0 012 2v4"/>
+              <path d="M10 21H6a2 2 0 01-2-2v-4"/>
+              <path d="M21 14l-7-7"/>
+              <path d="M3 10l7 7"/>
+            </svg>
+          </span>
           <span class="chrome-menu-text">Extensions</span>
           <span class="chrome-menu-shortcut">Ctrl+Shift+E</span>
         </div>
@@ -484,7 +591,12 @@
         <div class="chrome-extensions-grid">
           <!-- Ad Blocker -->
           <div class="chrome-extension-card" data-extension="adblock">
-            <div class="chrome-extension-icon">🛡️</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3l7 3v5c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-3z"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Ad Blocker</h3>
               <p>Block ads and trackers automatically</p>
@@ -500,7 +612,12 @@
 
           <!-- Image Zoom -->
           <div class="chrome-extension-card" data-extension="imagezoom">
-            <div class="chrome-extension-icon">🔍</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Image Zoom</h3>
               <p>Hover over images to zoom in</p>
@@ -519,7 +636,12 @@
 
           <!-- Popup Blocker -->
           <div class="chrome-extension-card" data-extension="popupblock">
-            <div class="chrome-extension-icon">🚫</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M5 5l14 14"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Popup Blocker</h3>
               <p>Block unwanted popup windows</p>
@@ -535,7 +657,11 @@
 
           <!-- Dark Mode -->
           <div class="chrome-extension-card" data-extension="darkmode">
-            <div class="chrome-extension-icon">🌙</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Dark Reader</h3>
               <p>Apply dark mode to all websites</p>
@@ -548,7 +674,13 @@
 
           <!-- Screenshot Tool -->
           <div class="chrome-extension-card" data-extension="screenshot">
-            <div class="chrome-extension-icon">📸</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="7" width="18" height="14" rx="2"/>
+                <path d="M9 7l2-3h2l2 3"/>
+                <circle cx="12" cy="14" r="3"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Screenshot</h3>
               <p>Capture full page or visible area</p>
@@ -558,7 +690,13 @@
 
           <!-- Video Downloader -->
           <div class="chrome-extension-card" data-extension="videodownload">
-            <div class="chrome-extension-icon">⬇️</div>
+            <div class="chrome-extension-icon">
+              <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
             <div class="chrome-extension-info">
               <h3>Video Downloader</h3>
               <p>Download videos from websites</p>
@@ -612,7 +750,11 @@
     <!-- Session Manager Panel -->
     <div class="session-manager-panel hidden" id="sessionManagerPanel">
       <div class="panel-header">
-        <h2>💾 Session Manager</h2>
+        <h2><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:8px;">
+          <path d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2z"/>
+          <path d="M12 11v6"/>
+          <circle cx="12" cy="7" r="1"/>
+        </svg>Session Manager</h2>
         <button class="panel-close" id="closeSessionManager">×</button>
       </div>
       <div class="panel-content">
@@ -640,7 +782,11 @@
         </div>
 
         <div class="session-section">
-          <h3>📸 Auto-Snapshots</h3>
+          <h3><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:6px;">
+            <rect x="3" y="7" width="18" height="14" rx="2"/>
+            <path d="M9 7l2-3h2l2 3"/>
+            <circle cx="12" cy="14" r="3"/>
+          </svg>Auto-Snapshots</h3>
           <div class="session-list" id="snapshotsList">
             <!-- Populated by JS -->
           </div>
@@ -658,7 +804,9 @@
     <!-- Smart Bookmarks Panel -->
     <div class="smart-bookmarks-panel hidden" id="smartBookmarksPanel">
       <div class="panel-header">
-        <h2>🔖 Smart Bookmarks</h2>
+        <h2><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:8px;">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>Smart Bookmarks</h2>
         <button class="panel-close" id="closeSmartBookmarks">×</button>
       </div>
       <div class="panel-content">
@@ -691,7 +839,10 @@
     <!-- Password Manager Panel -->
     <div class="password-manager-panel hidden" id="passwordManagerPanel">
       <div class="panel-header">
-        <h2>🔐 Password Manager</h2>
+        <h2><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:8px;">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V8a5 5 0 0110 0v3"/>
+        </svg>Password Manager</h2>
         <button class="panel-close" id="closePasswordManager">×</button>
       </div>
       <div class="panel-content">
@@ -720,21 +871,38 @@
 
           <div class="password-stats">
             <div class="stat-card weak" id="weakPasswordsCard">
-              <div class="stat-icon">⚠️</div>
+              <div class="stat-icon">
+                <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12" y2="17"/>
+                </svg>
+              </div>
               <div class="stat-info">
                 <h4>Weak Passwords</h4>
                 <p><span id="weakCount">0</span> passwords need updating</p>
               </div>
             </div>
             <div class="stat-card reused" id="reusedPasswordsCard">
-              <div class="stat-icon">🔄</div>
+              <div class="stat-icon">
+                <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 12a9 9 0 11-9-9"/>
+                  <polyline points="21 3 21 12 12 12"/>
+                </svg>
+              </div>
               <div class="stat-info">
                 <h4>Reused Passwords</h4>
                 <p><span id="reusedCount">0</span> passwords reused</p>
               </div>
             </div>
             <div class="stat-card breached" id="breachedPasswordsCard">
-              <div class="stat-icon">🚨</div>
+              <div class="stat-icon">
+                <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 19h12l-1-9a5 5 0 00-10 0l-1 9z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12" y2="17"/>
+                </svg>
+              </div>
               <div class="stat-info">
                 <h4>Breached</h4>
                 <p><span id="breachedCount">0</span> found in data breaches</p>
@@ -748,11 +916,23 @@
 
           <!-- Password Generator -->
           <div class="password-generator" id="passwordGenerator">
-            <h3>🎲 Password Generator</h3>
+            <h3><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:6px;">
+              <path d="M4 4h10a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+              <circle cx="8" cy="8" r="1"/>
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="8" cy="12" r="1"/>
+              <circle cx="12" cy="8" r="1"/>
+            </svg>Password Generator</h3>
             <div class="generated-password-display">
               <input type="text" id="generatedPassword" readonly />
               <button class="btn-icon" id="copyGenerated" title="Copy">📋</button>
-              <button class="btn-icon" id="regeneratePassword" title="Generate New">🔄</button>
+              <button class="btn-icon" id="regeneratePassword" title="Generate New">
+                <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <polyline points="1 20 1 14 7 14"/>
+                  <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"/>
+                </svg>
+              </button>
             </div>
             <div class="generator-options">
               <label>
@@ -790,7 +970,10 @@
     <!-- Sync Panel -->
     <div class="sync-panel hidden" id="syncPanel">
       <div class="panel-header">
-        <h2>☁️ Universal Sync</h2>
+        <h2><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:8px;">
+          <path d="M20 15.5A4.5 4.5 0 0015.5 11 6.5 6.5 0 009 12.5 4 4 0 006 19h11.5a3.5 3.5 0 002-3.5z"/>
+          <path d="M8 13l2 2 4-4"/>
+        </svg>Universal Sync</h2>
         <button class="panel-close" id="closeSyncPanel">×</button>
       </div>
       <div class="panel-content">
@@ -813,10 +996,18 @@
         </div>
 
         <div class="sync-section">
-          <h3>📱 Your Devices</h3>
+          <h3><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:6px;">
+            <rect x="7" y="2" width="10" height="20" rx="2"/>
+            <line x1="12" y1="18" x2="12" y2="18"/>
+          </svg>Your Devices</h3>
           <div class="device-list" id="deviceList">
             <div class="device-item active">
-              <div class="device-icon">💻</div>
+              <div class="device-icon">
+                <svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="12" rx="2"/>
+                  <path d="M2 20h20"/>
+                </svg>
+              </div>
               <div class="device-info">
                 <h4>Desktop (Current)</h4>
                 <p>Windows • Active now</p>
@@ -826,31 +1017,34 @@
         </div>
 
         <div class="sync-section">
-          <h3>⚙️ Sync Settings</h3>
+          <h3><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:6px;">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 007 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 003.6 15 1.65 1.65 0 002.09 14H2a2 2 0 010-4h.09A1.65 1.65 0 003 7.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 007 4.6 1.65 1.65 0 008.09 4H9a2 2 0 014 0h.91A1.65 1.65 0 0017 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0020.4 9c.36.33.6.78.69 1.27H21a2 2 0 010 4h-.09A1.65 1.65 0 0019.4 15z"/>
+          </svg>Sync Settings</h3>
           <div class="sync-options">
             <label>
               <input type="checkbox" id="syncBookmarks" checked />
-              <span>🔖 Bookmarks</span>
+              <span>Bookmarks</span>
             </label>
             <label>
               <input type="checkbox" id="syncHistory" checked />
-              <span>📜 History</span>
+              <span>History</span>
             </label>
             <label>
               <input type="checkbox" id="syncPasswords" checked />
-              <span>🔐 Passwords</span>
+              <span>Passwords</span>
             </label>
             <label>
               <input type="checkbox" id="syncExtensions" checked />
-              <span>🧩 Extensions</span>
+              <span>Extensions</span>
             </label>
             <label>
               <input type="checkbox" id="syncSessions" checked />
-              <span>💾 Sessions</span>
+              <span>Sessions</span>
             </label>
             <label>
               <input type="checkbox" id="syncSettings" checked />
-              <span>⚙️ Settings</span>
+              <span>Settings</span>
             </label>
           </div>
         </div>
@@ -862,7 +1056,10 @@
                 <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
               </svg>
               <div>
-                <h4>🔐 End-to-End Encrypted</h4>
+                <h4><svg class="icon-ol" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align: middle; margin-right:6px;">
+                  <rect x="3" y="11" width="18" height="10" rx="2"/>
+                  <path d="M7 11V8a5 5 0 0110 0v3"/>
+                </svg>End-to-End Encrypted</h4>
                 <p>Your data is encrypted before leaving your device. Not even we can read it.</p>
               </div>
             </div>

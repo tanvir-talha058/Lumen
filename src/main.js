@@ -84,6 +84,11 @@ const state = {
     darkReader: { enabled: false },
     videoDownloader: { enabled: false }
   },
+  profile: {
+    currentId: 'default',
+    guestMode: false,
+    name: 'User Profile'
+  },
   
   voiceSearch: {
     isListening: false,
@@ -124,6 +129,14 @@ async function init() {
   setupImageZoom();
   setupPopupBlocker();
   setupElectronListeners(); // Add Electron IPC listeners
+  setupProfileMenu();
+  // Inform main process of initial profile/guest mode (for partitioned sessions)
+  try {
+    if (typeof require !== 'undefined') {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.send('profile-changed', { profileId: state.profile.currentId, guestMode: state.profile.guestMode });
+    }
+  } catch {}
   
   renderBookmarks();
   renderHistory();
@@ -132,6 +145,78 @@ async function init() {
   if (state.settings.reopenLastSession) {
     await restoreLastSession();
   }
+}
+
+// ============================================================================
+// PROFILE & STORAGE HELPERS (Guest mode / simple profiles)
+// ============================================================================
+
+function profilePrefix() {
+  return state.profile && state.profile.currentId !== 'default' ? `p:${state.profile.currentId}:` : '';
+}
+
+function storageGet(key) {
+  if (state.profile?.guestMode) return null;
+  return localStorage.getItem(profilePrefix() + key);
+}
+function storageSet(key, value) {
+  if (state.profile?.guestMode) return;
+  localStorage.setItem(profilePrefix() + key, value);
+}
+function storageRemove(key) {
+  if (state.profile?.guestMode) return;
+  localStorage.removeItem(profilePrefix() + key);
+}
+
+function setupProfileMenu() {
+  const btn = document.getElementById('profileBtn');
+  const btnTop = document.getElementById('profileBtnTop');
+  const menu = document.getElementById('profileMenu');
+  const toggle = document.getElementById('guestModeToggle');
+  const label = document.getElementById('profileModeLabel');
+  if ((!btn && !btnTop) || !menu || !toggle || !label) return;
+
+  // Initialize toggle
+  toggle.checked = state.profile.guestMode;
+  label.textContent = state.profile.guestMode ? 'Guest mode' : 'Standard mode';
+
+  const toggleMenu = () => {
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  };
+  btn?.addEventListener('click', toggleMenu);
+  btnTop?.addEventListener('click', toggleMenu);
+  document.addEventListener('click', (e) => {
+    if (!menu.contains(e.target) && e.target !== btn && e.target !== btnTop) {
+      menu.style.display = 'none';
+    }
+  });
+
+  toggle.addEventListener('change', (e) => {
+    state.profile.guestMode = e.target.checked;
+    label.textContent = state.profile.guestMode ? 'Guest mode' : 'Standard mode';
+    showNotification(state.profile.guestMode ? 'Guest mode enabled' : 'Guest mode disabled', 'success');
+    // Notify main process to switch BrowserView session partition
+    try {
+      if (typeof require !== 'undefined') {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('profile-changed', { profileId: state.profile.currentId, guestMode: state.profile.guestMode });
+      }
+    } catch {}
+
+    if (state.profile.guestMode) {
+      // Clear in-memory non-essential data for a fresh guest session
+      state.history = [];
+      state.sessions = [];
+      renderHistory();
+      renderSessions();
+    } else {
+      // Reload persisted data when returning to standard mode
+      loadHistory();
+      loadSessions();
+      renderHistory();
+      renderSessions();
+    }
+  });
 }
 
 // ============================================================================
@@ -310,7 +395,7 @@ window.deleteBookmark = deleteBookmark;
 // ============================================================================
 
 async function loadHistory() {
-  const saved = localStorage.getItem('lumen_history');
+  const saved = storageGet('lumen_history');
   if (saved) {
     state.history = JSON.parse(saved);
   }
@@ -341,14 +426,14 @@ function addToHistory(url, title) {
     state.history = state.history.slice(0, 1000);
   }
   
-  localStorage.setItem('lumen_history', JSON.stringify(state.history));
+  storageSet('lumen_history', JSON.stringify(state.history));
   renderHistory();
 }
 
 function clearHistory() {
   if (confirm('Clear all browsing history?')) {
     state.history = [];
-    localStorage.removeItem('lumen_history');
+    storageRemove('lumen_history');
     renderHistory();
     showNotification('History cleared', 'success');
   }
@@ -398,7 +483,7 @@ function getTimeAgo(date) {
 // ============================================================================
 
 async function loadSessions() {
-  const saved = localStorage.getItem('lumen_sessions');
+  const saved = storageGet('lumen_sessions');
   if (saved) {
     state.sessions = JSON.parse(saved);
   }
@@ -420,7 +505,7 @@ function saveCurrentSession() {
   };
   
   state.sessions.push(session);
-  localStorage.setItem('lumen_sessions', JSON.stringify(state.sessions));
+  storageSet('lumen_sessions', JSON.stringify(state.sessions));
   renderSessions();
   showNotification(`Session "${sessionName}" saved!`, 'success');
 }
@@ -452,7 +537,7 @@ function restoreSession(sessionId) {
 }
 
 async function restoreLastSession() {
-  const lastSession = localStorage.getItem('lumen_last_session');
+  const lastSession = storageGet('lumen_last_session');
   if (lastSession) {
     const tabs = JSON.parse(lastSession);
     tabs.forEach((tab, index) => {
@@ -467,12 +552,12 @@ async function restoreLastSession() {
 }
 
 function saveLastSession() {
-  localStorage.setItem('lumen_last_session', JSON.stringify(state.tabs));
+  storageSet('lumen_last_session', JSON.stringify(state.tabs));
 }
 
 function deleteSession(sessionId) {
   state.sessions = state.sessions.filter(s => s.id !== sessionId);
-  localStorage.setItem('lumen_sessions', JSON.stringify(state.sessions));
+  storageSet('lumen_sessions', JSON.stringify(state.sessions));
   renderSessions();
 }
 
@@ -712,6 +797,17 @@ function renderTabContent(tabId) {
           
           <h1>Lumen</h1>
           <p class="tagline">Fast. Private. Innovative.</p>
+
+          <div class="profile-mode" style="display:flex; gap:16px; justify-content:center; margin: 8px 0 24px 0;">
+            <button onclick="window.selectStandardProfile?.()" class="chrome-omnibox-btn" title="Use standard profile" style="padding:10px 14px; border-radius: 10px; border:1px solid var(--chrome-border);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              Standard
+            </button>
+            <button onclick="window.selectGuestProfile?.()" class="chrome-omnibox-btn" title="Use guest mode" style="padding:10px 14px; border-radius: 10px; border:1px solid var(--chrome-border);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5a3 3 0 110 6 3 3 0 010-6zm0 8c-2.67 0-5.33 1.34-5.33 4H17.33c0-2.66-2.66-4-5.33-4z"/></svg>
+              Guest
+            </button>
+          </div>
           
           <div class="quick-links">
             <div class="quick-link" onclick="navigateToBookmark('https://github.com')">
@@ -737,6 +833,50 @@ function renderTabContent(tabId) {
     pane.appendChild(container);
   }
 }
+
+// Expose quick profile selectors used on start page
+window.selectStandardProfile = function() {
+  if (state.profile.guestMode) {
+    state.profile.guestMode = false;
+    try {
+      const label = document.getElementById('profileModeLabel');
+      const toggle = document.getElementById('guestModeToggle');
+      if (label) label.textContent = 'Standard mode';
+      if (toggle) toggle.checked = false;
+    } catch {}
+    try {
+      if (typeof require !== 'undefined') {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('profile-changed', { profileId: state.profile.currentId, guestMode: false });
+      }
+    } catch {}
+    showNotification('Switched to standard profile', 'success');
+  }
+};
+
+window.selectGuestProfile = function() {
+  if (!state.profile.guestMode) {
+    state.profile.guestMode = true;
+    try {
+      const label = document.getElementById('profileModeLabel');
+      const toggle = document.getElementById('guestModeToggle');
+      if (label) label.textContent = 'Guest mode';
+      if (toggle) toggle.checked = true;
+    } catch {}
+    try {
+      if (typeof require !== 'undefined') {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('profile-changed', { profileId: state.profile.currentId, guestMode: true });
+      }
+    } catch {}
+    // Clear in-memory lists for guest
+    state.history = [];
+    state.sessions = [];
+    renderHistory();
+    renderSessions();
+    showNotification('Guest mode enabled', 'success');
+  }
+};
 
 function extractDomain(url) {
   try {
@@ -856,17 +996,24 @@ function navigate(input) {
   // Show toast notification
   showNotification(`Search executed: "${input.substring(0, 50)}${input.length > 50 ? '...' : ''}"`, 'info');
 }function updateSecurityIcon(url) {
-  const icon = document.getElementById('securityIcon');
-  if (url.startsWith('https://')) {
-    icon.textContent = '🔒';
-    icon.title = 'Secure connection';
-  } else if (url.startsWith('http://')) {
-    icon.textContent = '⚠️';
-    icon.title = 'Not secure';
-  } else {
-    icon.textContent = '🌐';
-    icon.title = '';
+  // Target the omnibox security SVG (uses currentColor)
+  const icon = document.querySelector('.chrome-omnibox-icon .security-icon');
+  if (!icon) return;
+
+  // Default neutral color
+  let color = '#5f6368';
+  let title = '';
+
+  if (url && url.startsWith('https://')) {
+    color = '#1e8e3e'; // green for secure
+    title = 'Secure connection';
+  } else if (url && url.startsWith('http://')) {
+    color = '#d93025'; // red/orange for not secure
+    title = 'Not secure';
   }
+
+  icon.style.color = color;
+  icon.setAttribute('title', title);
 }
 
 function goBack() {
@@ -954,7 +1101,7 @@ function setupOmnibox() {
   });
   
   omnibox.addEventListener('keydown', (e) => {
-    const items = suggestions.querySelectorAll('.suggestion-item');
+    const items = suggestions.querySelectorAll('.chrome-suggestion-item');
     
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -1007,10 +1154,12 @@ function showOmniboxSuggestions(query) {
   
   // Search suggestion
   html += `
-    <div class="suggestion-item" onclick="navigate('${escapeHtml(query)}')">
-      <span class="suggestion-icon">🔍</span>
-      <div class="suggestion-content">
-        <div class="suggestion-title">Search for "${escapeHtml(query)}"</div>
+    <div class="chrome-suggestion-item" onclick="navigate('${escapeHtml(query)}')">
+      <span class="chrome-suggestion-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </span>
+      <div class="chrome-suggestion-content">
+        <div class="chrome-suggestion-title">Search for "${escapeHtml(query)}"</div>
       </div>
     </div>
   `;
@@ -1018,11 +1167,13 @@ function showOmniboxSuggestions(query) {
   // Bookmark suggestions
   bookmarkMatches.forEach(b => {
     html += `
-      <div class="suggestion-item" onclick="navigate('${escapeHtml(b.url)}')">
-        <span class="suggestion-icon">⭐</span>
-        <div class="suggestion-content">
-          <div class="suggestion-title">${escapeHtml(b.title)}</div>
-          <div class="suggestion-url">${escapeHtml(b.url)}</div>
+      <div class="chrome-suggestion-item" onclick="navigate('${escapeHtml(b.url)}')">
+        <span class="chrome-suggestion-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+        </span>
+        <div class="chrome-suggestion-content">
+          <div class="chrome-suggestion-title">${escapeHtml(b.title)}</div>
+          <div class="chrome-suggestion-url">${escapeHtml(b.url)}</div>
         </div>
       </div>
     `;
@@ -1031,11 +1182,13 @@ function showOmniboxSuggestions(query) {
   // History suggestions
   historyMatches.forEach(h => {
     html += `
-      <div class="suggestion-item" onclick="navigate('${escapeHtml(h.url)}')">
-        <span class="suggestion-icon">🕒</span>
-        <div class="suggestion-content">
-          <div class="suggestion-title">${escapeHtml(h.title)}</div>
-          <div class="suggestion-url">${escapeHtml(h.url)}</div>
+      <div class="chrome-suggestion-item" onclick="navigate('${escapeHtml(h.url)}')">
+        <span class="chrome-suggestion-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 8v5l4 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22a10 10 0 110-20 10 10 0 010 20z" fill="currentColor" opacity=".15"/></svg>
+        </span>
+        <div class="chrome-suggestion-content">
+          <div class="chrome-suggestion-title">${escapeHtml(h.title)}</div>
+          <div class="chrome-suggestion-url">${escapeHtml(h.url)}</div>
         </div>
       </div>
     `;
@@ -1686,6 +1839,11 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
+// Backward-compat shim for older calls
+function showToast(message, type = 'info') {
+  return showNotification(message, type);
+}
+
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
@@ -2035,6 +2193,27 @@ const verticalTabsManager = {
 
   init() {
     this.loadTabs();
+    // Load and apply initial collapsed state
+    const storedCollapsed = localStorage.getItem('verticalTabsCollapsed');
+    this.isCollapsed = storedCollapsed === 'true';
+    const sidebar = document.querySelector('.vertical-tabs-sidebar');
+    const app = document.getElementById('app');
+    if (this.isCollapsed) {
+      sidebar?.classList.add('collapsed');
+      app?.classList.remove('vertical-tabs-active');
+    } else {
+      sidebar?.classList.remove('collapsed');
+      app?.classList.add('vertical-tabs-active');
+    }
+
+    // Inform Electron (if present) so BrowserView can update bounds
+    if (typeof require !== 'undefined') {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('sidebar-collapsed-changed', this.isCollapsed);
+      } catch {}
+    }
+
     this.attachEventListeners();
     this.render();
   },
@@ -2070,6 +2249,14 @@ const verticalTabsManager = {
     }
     
     localStorage.setItem('verticalTabsCollapsed', this.isCollapsed);
+
+    // Notify Electron main process to resize BrowserView accordingly
+    if (typeof require !== 'undefined') {
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('sidebar-collapsed-changed', this.isCollapsed);
+      } catch {}
+    }
   },
 
   loadTabs() {
@@ -2092,16 +2279,29 @@ const verticalTabsManager = {
     const container = document.querySelector('.vertical-tabs-list');
     if (!container) return;
 
-    container.innerHTML = this.tabs.map(tab => `
-      <div class="vertical-tab ${tab.active ? 'active' : ''}" data-tab-id="${tab.id}">
-        <span class="tab-favicon">${tab.favicon}</span>
-        <div class="tab-info">
-          <div class="tab-title">${this.escapeHtml(tab.title)}</div>
-          <div class="tab-url">${this.escapeHtml(tab.url)}</div>
+    const defaultIcon = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M3 4h18v14H3z" opacity=".3"/>
+        <path d="M21 18H3c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h18c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2zM3 4v12h18V4H3z"/>
+      </svg>`;
+
+    container.innerHTML = this.tabs.map(tab => {
+      const isUrlFavicon = tab.favicon && /^https?:\/\//i.test(tab.favicon);
+      const faviconHtml = isUrlFavicon
+        ? `<img src="${this.escapeHtml(tab.favicon)}" alt="" width="16" height="16" style="border-radius:3px; object-fit:cover;"/>`
+        : defaultIcon;
+
+      return `
+        <div class="vertical-tab ${tab.active ? 'active' : ''}" data-tab-id="${tab.id}">
+          <span class="tab-favicon">${faviconHtml}</span>
+          <div class="tab-info">
+            <div class="tab-title">${this.escapeHtml(tab.title)}</div>
+            <div class="tab-url">${this.escapeHtml(tab.url)}</div>
+          </div>
+          <button class="tab-close" data-action="close">×</button>
         </div>
-        <button class="tab-close" data-action="close">×</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     this.attachTabListeners();
   },
