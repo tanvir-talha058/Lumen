@@ -2881,14 +2881,7 @@ body {
 }
 
 .password-item::before {
-  content: '🔐';
-  position: absolute;
-  right: var(--space-lg);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 24px;
-  opacity: 0;
-  transition: all var(--chrome-transition-fast);
+  content: '';
 }
 
 .password-item:hover {
@@ -2898,10 +2891,7 @@ body {
   background: var(--chrome-bg);
 }
 
-.password-item:hover::before {
-  opacity: 0.1;
-  right: var(--space-md);
-}
+
 
 .password-site {
   display: flex;
@@ -3140,3 +3130,72 @@ body {
   color: var(--chrome-text-secondary);
   line-height: 1.5;
 }
+
+/* ============================================================================
+   ANIMATIONS & TRANSITIONS
+   ============================================================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.tab {
+  animation: slideIn 0.2s ease-out;
+}
+
+.tab.active {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.webview-container {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.chrome-menu {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.notification {
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal.active {
+  animation: fadeIn 0.2s ease-out;
+}
+

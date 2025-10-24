@@ -15,7 +15,7 @@ const state = {
     title: 'New Tab',
     url: '',
     active: true,
-    favicon: '🌐',
+    favicon: '',
     groupId: 'default',
     suspended: false
   }],
@@ -238,33 +238,49 @@ function saveSettings() {
 }
 
 function applySettings() {
-  // Apply all settings to UI
-  document.getElementById('homePageInput').value = state.settings.homePage;
-  document.getElementById('searchEngineSelect').value = state.settings.searchEngine;
-  document.getElementById('themeSelect').value = state.settings.theme;
-  document.getElementById('densitySelect').value = state.settings.density;
-  document.getElementById('fontSizeInput').value = state.settings.fontSize;
-  document.getElementById('fontSizeValue').textContent = `${state.settings.fontSize}px`;
+  // Apply all settings to UI - with safety checks for null elements
+  const setElementValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  };
+  
+  const setElementChecked = (id, checked) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked;
+  };
+  
+  const setElementText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  
+  // General settings
+  setElementValue('homePageInput', state.settings.homePage);
+  setElementValue('searchEngineSelect', state.settings.searchEngine);
+  setElementValue('themeSelect', state.settings.theme);
+  setElementValue('densitySelect', state.settings.density);
+  setElementValue('fontSizeInput', state.settings.fontSize);
+  setElementText('fontSizeValue', `${state.settings.fontSize}px`);
   
   // Privacy settings
-  document.getElementById('blockThirdPartyCookies').checked = state.settings.blockThirdPartyCookies;
-  document.getElementById('blockTrackers').checked = state.settings.blockTrackers;
-  document.getElementById('blockFingerprinting').checked = state.settings.blockFingerprinting;
-  document.getElementById('httpsOnly').checked = state.settings.httpsOnly;
-  document.getElementById('disableAutoplay').checked = state.settings.disableAutoplay;
-  document.getElementById('doNotTrack').checked = state.settings.doNotTrack;
+  setElementChecked('blockThirdPartyCookies', state.settings.blockThirdPartyCookies);
+  setElementChecked('blockTrackers', state.settings.blockTrackers);
+  setElementChecked('blockFingerprinting', state.settings.blockFingerprinting);
+  setElementChecked('httpsOnly', state.settings.httpsOnly);
+  setElementChecked('disableAutoplay', state.settings.disableAutoplay);
+  setElementChecked('doNotTrack', state.settings.doNotTrack);
   
   // Appearance
-  document.getElementById('showFavicons').checked = state.settings.showFavicons;
-  document.getElementById('animationsEnabled').checked = state.settings.animationsEnabled;
-  document.getElementById('showBookmarksBar').checked = state.settings.showBookmarksBar;
+  setElementChecked('showFavicons', state.settings.showFavicons);
+  setElementChecked('animationsEnabled', state.settings.animationsEnabled);
+  setElementChecked('showBookmarksBar', state.settings.showBookmarksBar);
   
   // Advanced
-  document.getElementById('lowMemoryMode').checked = state.settings.lowMemoryMode;
-  document.getElementById('tabSuspendTime').value = state.settings.tabSuspendTime;
-  document.getElementById('hardwareAcceleration').checked = state.settings.hardwareAcceleration;
-  document.getElementById('reopenLastSession').checked = state.settings.reopenLastSession;
-  document.getElementById('maxCacheSize').value = state.settings.maxCacheSize;
+  setElementChecked('lowMemoryMode', state.settings.lowMemoryMode);
+  setElementValue('tabSuspendTime', state.settings.tabSuspendTime);
+  setElementChecked('hardwareAcceleration', state.settings.hardwareAcceleration);
+  setElementChecked('reopenLastSession', state.settings.reopenLastSession);
+  setElementValue('maxCacheSize', state.settings.maxCacheSize);
 }
 
 function resetSettings() {
@@ -287,6 +303,24 @@ function applyTheme() {
   } else {
     document.documentElement.setAttribute('data-theme', theme);
   }
+}
+
+function cycleTheme() {
+  const themes = ['light', 'dark', 'auto'];
+  const currentIndex = themes.indexOf(state.settings.theme);
+  const nextIndex = (currentIndex + 1) % themes.length;
+  state.settings.theme = themes[nextIndex];
+  
+  saveSettings();
+  applyTheme();
+  
+  const themeNames = {
+    light: '☀️ Light Mode',
+    dark: '🌙 Dark Mode',
+    auto: '🔄 Auto Mode'
+  };
+  
+  showNotification(`Theme: ${themeNames[state.settings.theme]}`, 'success');
 }
 
 function applyDensity() {
@@ -356,7 +390,7 @@ function renderBookmarks() {
 
   const html = state.bookmarks.map(b => `
     <div class="sidebar-bookmark-item" onclick="navigateToBookmark('${escapeHtml(b.url)}')">
-      <span class="bookmark-favicon">${b.favicon || '🌐'}</span>
+    <span class="bookmark-favicon">${b.favicon || ''}</span>
       <div class="bookmark-info">
         <div class="bookmark-title">${escapeHtml(b.title)}</div>
         <div class="bookmark-url">${escapeHtml(b.url)}</div>
@@ -602,7 +636,7 @@ function createTab(url = '', title = 'New Tab') {
     title,
     url,
     active: false,
-    favicon: '🌐',
+    favicon: '',
     groupId: 'default',
     suspended: false
   };
@@ -668,7 +702,7 @@ function closeTab(tabId) {
       title: 'New Tab',
       url: '',
       active: true,
-      favicon: '🌐',
+      favicon: '',
       groupId: 'default',
       suspended: false
     };
@@ -702,7 +736,10 @@ function switchToTab(tabId) {
   // Update omnibox and bookmark button
   const tab = state.tabs.find(t => t.id === tabId);
   if (tab) {
-    document.getElementById('omnibox').value = tab.url || '';
+    const omnibox = document.getElementById('omnibox');
+    if (omnibox) {
+      omnibox.value = tab.url || '';
+    }
     updateBookmarkButton(checkIfBookmarked(tab.url));
     updateSecurityIcon(tab.url);
     
@@ -732,6 +769,11 @@ function reopenClosedTab() {
 function renderTabs() {
   const tabStrip = document.getElementById('tabStrip');
   const newTabBtn = document.querySelector('.new-tab-btn');
+  
+  if (!tabStrip) {
+    console.warn('Tab strip element not found');
+    return;
+  }
 
   // Group tabs by groupId
   const groupedTabs = {};
@@ -767,7 +809,10 @@ function renderTabs() {
   });
 
   tabStrip.innerHTML = tabsHtml;
-  tabStrip.appendChild(newTabBtn);
+  const newTabBtnEl = document.getElementById('newTabBtn');
+  if (newTabBtnEl) {
+    tabStrip.appendChild(newTabBtnEl);
+  }
 }
 
 function renderTabContent(tabId) {
@@ -811,19 +856,27 @@ function renderTabContent(tabId) {
           
           <div class="quick-links">
             <div class="quick-link" onclick="navigateToBookmark('https://github.com')">
-              <div class="quick-link-icon">💻</div>
+              <div class="quick-link-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
+              </div>
               <div class="quick-link-title">GitHub</div>
             </div>
             <div class="quick-link" onclick="navigateToBookmark('https://stackoverflow.com')">
-              <div class="quick-link-icon">📚</div>
+              <div class="quick-link-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
+              </div>
               <div class="quick-link-title">StackOverflow</div>
             </div>
             <div class="quick-link" onclick="navigateToBookmark('https://youtube.com')">
-              <div class="quick-link-icon">▶️</div>
+              <div class="quick-link-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M10 8l6 4-6 4V8z"></path></svg>
+              </div>
               <div class="quick-link-title">YouTube</div>
             </div>
             <div class="quick-link" onclick="navigateToBookmark('https://twitter.com')">
-              <div class="quick-link-icon">🐦</div>
+              <div class="quick-link-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.43.36a9 9 0 0 1-2.86 1.1A4.52 4.52 0 0 0 16.11 0c-2.5 0-4.5 2.28-3.95 4.73A12.94 12.94 0 0 1 1.64.89 4.48 4.48 0 0 0 3.1 6.6 4.4 4.4 0 0 1 .9 5.7v.06A4.51 4.51 0 0 0 4.5 10.8 4.52 4.52 0 0 1 1 11.4a12.8 12.8 0 0 0 7 2.05A12.7 12.7 0 0 0 19 5.3c0-.2 0-.4-.02-.6A9 9 0 0 0 23 3z"></path></svg>
+              </div>
               <div class="quick-link-title">Twitter</div>
             </div>
           </div>
@@ -920,7 +973,7 @@ function navigate(input) {
 
   activeTab.url = url;
   activeTab.title = extractDomain(url);
-  activeTab.favicon = '🌐';
+  activeTab.favicon = '';
   
   // Add to history
   addToHistory(url, activeTab.title);
@@ -949,7 +1002,9 @@ function navigate(input) {
   if (container) {
     container.innerHTML = `
       <div style="padding: 60px 40px; text-align: center; max-width: 800px; margin: 0 auto;">
-        <div style="font-size: 64px; margin-bottom: 24px; animation: fadeIn 0.3s ease;">🌐</div>
+        <div style="font-size: 64px; margin-bottom: 24px; animation: fadeIn 0.3s ease;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M2 12h20M12 2v20"/></svg>
+        </div>
         <h2 style="margin-bottom: 16px; color: var(--text-primary); font-size: 28px;">
           Navigating to...
         </h2>
@@ -960,22 +1015,22 @@ function navigate(input) {
         </div>
         <div style="background: linear-gradient(135deg, rgba(26,115,232,0.1) 0%, rgba(26,115,232,0.05) 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px;">
           <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; font-size: 16px;">
-            <strong>📌 This is a browser UI demonstration</strong><br/>
-            To actually browse websites, this needs a browser engine:
+            <strong>This is a browser UI demonstration</strong><br/>
+            To actually browse websites, this needs a browser engine.
           </p>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0;">
             <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
-              <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
+              <div style="font-size: 24px; margin-bottom: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/></svg></div>
               <strong style="display: block; margin-bottom: 4px;">Tauri + WebView2</strong>
               <small style="color: var(--text-tertiary);">Smallest size (~8MB)</small>
             </div>
             <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
-              <div style="font-size: 24px; margin-bottom: 8px;">🔷</div>
+              <div style="font-size: 24px; margin-bottom: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div>
               <strong style="display: block; margin-bottom: 4px;">Electron</strong>
               <small style="color: var(--text-tertiary);">Full Chromium (~85MB)</small>
             </div>
             <div style="background: white; padding: 12px; border-radius: 8px; text-align: left;">
-              <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
+              <div style="font-size: 24px; margin-bottom: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6"/></svg></div>
               <strong style="display: block; margin-bottom: 4px;">Custom WebView</strong>
               <small style="color: var(--text-tertiary);">Platform-specific</small>
             </div>
@@ -983,11 +1038,11 @@ function navigate(input) {
         </div>
         <div style="background: var(--chrome-surface); padding: 20px; border-radius: 12px; border-left: 4px solid var(--chrome-accent);">
           <p style="margin: 0; color: var(--text-secondary); font-size: 15px;">
-            ✨ <strong>All features work perfectly:</strong> Vertical Tabs, Sessions, Bookmarks, Password Manager, and Sync!
+            <strong>All features work perfectly:</strong> Vertical Tabs, Sessions, Bookmarks, Password Manager, and Sync!
           </p>
         </div>
         <p style="margin-top: 24px; color: var(--text-tertiary); font-size: 13px;">
-          Try the toolbar buttons (📂 Sessions, 🏷️ Bookmarks, 🔐 Passwords) to see working features!
+          Try the toolbar buttons (Sessions, Bookmarks, Passwords) to see working features!
         </p>
       </div>
     `;
@@ -1087,6 +1142,11 @@ function setupOmnibox() {
   const omnibox = document.getElementById('omnibox');
   const suggestions = document.getElementById('omniboxSuggestions');
   
+  if (!omnibox || !suggestions) {
+    console.warn('Omnibox or suggestions element not found');
+    return;
+  }
+  
   let selectedIndex = -1;
   
   omnibox.addEventListener('input', (e) => {
@@ -1138,6 +1198,11 @@ function setupOmnibox() {
 
 function showOmniboxSuggestions(query) {
   const suggestions = document.getElementById('omniboxSuggestions');
+  
+  if (!suggestions) {
+    console.warn('Omnibox suggestions element not found');
+    return;
+  }
   
   // Search in bookmarks and history
   const bookmarkMatches = state.bookmarks
@@ -1229,6 +1294,12 @@ function setupCommandPalette() {
   
   const search = document.getElementById('commandSearch');
   const results = document.getElementById('commandResults');
+  
+  if (!search || !results) {
+    console.warn('Command search elements not found');
+    return;
+  }
+  
   let selectedIndex = 0;
   
   search.addEventListener('input', (e) => {
@@ -1458,140 +1529,209 @@ function updatePrivacyBadge() {
 // EVENT LISTENERS
 // ============================================================================
 
+// Helper function to safely add event listeners
+function safeAddEventListener(elementOrId, event, handler) {
+  const element = typeof elementOrId === 'string' 
+    ? document.getElementById(elementOrId) 
+    : elementOrId;
+  if (element) {
+    element.addEventListener(event, handler);
+    return true;
+  }
+  return false;
+}
+
+function safeQuerySelectorAll(selector, callback) {
+  const elements = document.querySelectorAll(selector);
+  if (elements.length > 0) {
+    elements.forEach(callback);
+    return true;
+  }
+  return false;
+}
+
 function setupEventListeners() {
   // Tab controls
-  document.getElementById('newTabBtn').addEventListener('click', () => createTab());
+  safeAddEventListener('newTabBtn', 'click', () => createTab());
   
   // Navigation controls
-  document.getElementById('backBtn').addEventListener('click', goBack);
-  document.getElementById('forwardBtn').addEventListener('click', goForward);
-  document.getElementById('refreshBtn').addEventListener('click', refresh);
-  document.getElementById('homeBtn').addEventListener('click', goHome);
+  safeAddEventListener('backBtn', 'click', goBack);
+  safeAddEventListener('forwardBtn', 'click', goForward);
+  safeAddEventListener('refreshBtn', 'click', refresh);
+  safeAddEventListener('homeBtn', 'click', goHome);
   
   // Omnibox
   const omnibox = document.getElementById('omnibox');
-  omnibox.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      navigate(omnibox.value);
-      document.getElementById('omniboxSuggestions').classList.remove('active');
-    }
-  });
+  if (omnibox) {
+    omnibox.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        navigate(omnibox.value);
+        const suggestions = document.getElementById('omniboxSuggestions');
+        if (suggestions) suggestions.classList.remove('active');
+      }
+    });
+  }
   
   // Utility buttons
-  document.getElementById('bookmarkBtn').addEventListener('click', addBookmark);
-  document.getElementById('voiceSearchBtn').addEventListener('click', showVoiceModal);
-  document.getElementById('extensionsBtn').addEventListener('click', showExtensionsPanel);
+  safeAddEventListener('bookmarkBtn', 'click', addBookmark);
+  safeAddEventListener('voiceSearchBtn', 'click', showVoiceModal);
+  safeAddEventListener('extensionsBtn', 'click', showExtensionsPanel);
   
   // Sidebar
-  document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
-  document.getElementById('addBookmarkSidebar').addEventListener('click', addBookmark);
-  document.getElementById('clearHistory').addEventListener('click', clearHistory);
-  document.getElementById('saveSession').addEventListener('click', saveCurrentSession);
+  safeAddEventListener('sidebarToggle', 'click', toggleSidebar);
+  safeAddEventListener('addBookmarkSidebar', 'click', addBookmark);
+  safeAddEventListener('clearHistory', 'click', clearHistory);
+  safeAddEventListener('saveSession', 'click', saveCurrentSession);
   
   // Tab actions
-  document.getElementById('groupTabsBtn').addEventListener('click', () => showNotification('Tab grouping interface coming soon', 'info'));
-  document.getElementById('splitViewBtn').addEventListener('click', toggleSplitView);
-  document.getElementById('tabOverviewBtn').addEventListener('click', toggleTabOverview);
+  safeAddEventListener('groupTabsBtn', 'click', () => showNotification('Tab grouping interface coming soon', 'info'));
+  safeAddEventListener('splitViewBtn', 'click', toggleSplitView);
+  safeAddEventListener('tabOverviewBtn', 'click', toggleTabOverview);
   
   // Split view close
-  document.getElementById('closeSplit').addEventListener('click', toggleSplitView);
+  safeAddEventListener('closeSplit', 'click', toggleSplitView);
   
   // Tab overview close
-  document.querySelector('.tab-overview-close').addEventListener('click', hideTabOverview);
+  const tabOverviewClose = document.querySelector('.tab-overview-close');
+  if (tabOverviewClose) {
+    tabOverviewClose.addEventListener('click', hideTabOverview);
+  }
   
   // Chrome Menu
-  document.getElementById('chromeMenuBtn').addEventListener('click', toggleChromeMenu);
-  document.getElementById('extensionsMenuBtn').addEventListener('click', () => {
+  safeAddEventListener('chromeMenuBtn', 'click', toggleChromeMenu);
+  safeAddEventListener('extensionsMenuBtn', 'click', () => {
     toggleChromeMenu();
     showExtensionsPanel();
+  });
+  
+  // Theme Toggle
+  safeAddEventListener('themeToggle', 'click', () => {
+    toggleChromeMenu();
+    cycleTheme();
+  });
+  
+  // Settings Menu
+  safeAddEventListener('settingsMenu', 'click', () => {
+    toggleChromeMenu();
+    showModal('settingsModal');
+  });
+  
+  // Help Menu
+  safeAddEventListener('helpMenu', 'click', () => {
+    toggleChromeMenu();
+    showNotification('Visit github.com/tanvir-talha058/Lumen for help', 'info');
   });
   
   // Close menu on outside click
   document.addEventListener('click', (e) => {
     const menu = document.getElementById('chromeMenu');
     const btn = document.getElementById('chromeMenuBtn');
-    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
       menu.classList.add('hidden');
     }
   });
   
   // Voice Search
-  document.getElementById('closeVoice').addEventListener('click', hideVoiceModal);
+  safeAddEventListener('closeVoice', 'click', hideVoiceModal);
   
   // Extensions Panel
-  document.getElementById('closeExtensions').addEventListener('click', hideExtensionsPanel);
-  document.getElementById('adBlockerToggle').addEventListener('change', (e) => {
+  safeAddEventListener('closeExtensions', 'click', hideExtensionsPanel);
+  safeAddEventListener('adBlockerToggle', 'change', (e) => {
     state.extensions.adBlocker.enabled = e.target.checked;
     updateExtensionStates();
     showNotification(`Ad Blocker ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
   });
-  document.getElementById('imageZoomToggle').addEventListener('change', (e) => {
+  safeAddEventListener('imageZoomToggle', 'change', (e) => {
     state.extensions.imageZoom.enabled = e.target.checked;
     updateExtensionStates();
     showNotification(`Image Zoom ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
   });
-  document.getElementById('popupBlockerToggle').addEventListener('change', (e) => {
+  safeAddEventListener('popupBlockerToggle', 'change', (e) => {
     state.extensions.popupBlocker.enabled = e.target.checked;
     updateExtensionStates();
     showNotification(`Popup Blocker ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
   });
-  document.getElementById('darkReaderToggle').addEventListener('change', (e) => {
+  safeAddEventListener('darkReaderToggle', 'change', (e) => {
     state.extensions.darkReader.enabled = e.target.checked;
     updateExtensionStates();
     showNotification(`Dark Reader ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
   });
-  document.getElementById('videoDownloaderToggle').addEventListener('change', (e) => {
+  safeAddEventListener('videoDownloaderToggle', 'change', (e) => {
     state.extensions.videoDownloader.enabled = e.target.checked;
     updateExtensionStates();
     showNotification(`Video Downloader ${e.target.checked ? 'enabled' : 'disabled'}`, 'success');
   });
-  document.getElementById('zoomTrigger').addEventListener('change', (e) => {
+  safeAddEventListener('zoomTrigger', 'change', (e) => {
     state.extensions.imageZoom.trigger = e.target.value;
     updateExtensionStates();
   });
-  document.getElementById('takeScreenshot').addEventListener('click', takeScreenshot);
-  document.getElementById('getMoreExtensions').addEventListener('click', () => {
+  safeAddEventListener('takeScreenshot', 'click', takeScreenshot);
+  safeAddEventListener('getMoreExtensions', 'click', () => {
     showNotification('Extension store coming soon!', 'info');
   });
   
   // Image Zoom Overlay
-  document.getElementById('closeZoom').addEventListener('click', hideImageZoom);
-  document.getElementById('imageZoomOverlay').addEventListener('click', (e) => {
+  safeAddEventListener('closeZoom', 'click', hideImageZoom);
+  safeAddEventListener('imageZoomOverlay', 'click', (e) => {
     if (e.target.id === 'imageZoomOverlay') {
       hideImageZoom();
     }
   });
-  document.getElementById('zoomIn').addEventListener('click', zoomIn);
-  document.getElementById('zoomOut').addEventListener('click', zoomOut);
+  safeAddEventListener('zoomIn', 'click', zoomIn);
+  safeAddEventListener('zoomOut', 'click', zoomOut);
   
   // Popup Notification
-  document.getElementById('allowPopup').addEventListener('click', allowPopup);
+  safeAddEventListener('allowPopup', 'click', allowPopup);
   
   // Settings
-  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    // Collect all settings
-    state.settings.homePage = document.getElementById('homePageInput').value;
-    state.settings.searchEngine = document.getElementById('searchEngineSelect').value;
-    state.settings.theme = document.getElementById('themeSelect').value;
-    state.settings.density = document.getElementById('densitySelect').value;
-    state.settings.fontSize = parseInt(document.getElementById('fontSizeInput').value);
+  safeAddEventListener('saveSettingsBtn', 'click', () => {
+    // Collect all settings with safety checks
+    const getValue = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value : null;
+    };
     
-    state.settings.blockThirdPartyCookies = document.getElementById('blockThirdPartyCookies').checked;
-    state.settings.blockTrackers = document.getElementById('blockTrackers').checked;
-    state.settings.blockFingerprinting = document.getElementById('blockFingerprinting').checked;
-    state.settings.httpsOnly = document.getElementById('httpsOnly').checked;
-    state.settings.disableAutoplay = document.getElementById('disableAutoplay').checked;
-    state.settings.doNotTrack = document.getElementById('doNotTrack').checked;
+    const getChecked = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.checked : false;
+    };
     
-    state.settings.showFavicons = document.getElementById('showFavicons').checked;
-    state.settings.animationsEnabled = document.getElementById('animationsEnabled').checked;
-    state.settings.showBookmarksBar = document.getElementById('showBookmarksBar').checked;
-    state.settings.reopenLastSession = document.getElementById('reopenLastSession').checked;
+    const homepage = getValue('homePageInput');
+    if (homepage) state.settings.homePage = homepage;
     
-    state.settings.lowMemoryMode = document.getElementById('lowMemoryMode').checked;
-    state.settings.tabSuspendTime = parseInt(document.getElementById('tabSuspendTime').value);
-    state.settings.hardwareAcceleration = document.getElementById('hardwareAcceleration').checked;
-    state.settings.maxCacheSize = parseInt(document.getElementById('maxCacheSize').value);
+    const searchEngine = getValue('searchEngineSelect');
+    if (searchEngine) state.settings.searchEngine = searchEngine;
+    
+    const theme = getValue('themeSelect');
+    if (theme) state.settings.theme = theme;
+    
+    const density = getValue('densitySelect');
+    if (density) state.settings.density = density;
+    
+    const fontSize = getValue('fontSizeInput');
+    if (fontSize) state.settings.fontSize = parseInt(fontSize);
+    
+    state.settings.blockThirdPartyCookies = getChecked('blockThirdPartyCookies');
+    state.settings.blockTrackers = getChecked('blockTrackers');
+    state.settings.blockFingerprinting = getChecked('blockFingerprinting');
+    state.settings.httpsOnly = getChecked('httpsOnly');
+    state.settings.disableAutoplay = getChecked('disableAutoplay');
+    state.settings.doNotTrack = getChecked('doNotTrack');
+    
+    state.settings.showFavicons = getChecked('showFavicons');
+    state.settings.animationsEnabled = getChecked('animationsEnabled');
+    state.settings.showBookmarksBar = getChecked('showBookmarksBar');
+    state.settings.reopenLastSession = getChecked('reopenLastSession');
+    
+    state.settings.lowMemoryMode = getChecked('lowMemoryMode');
+    
+    const tabSuspend = getValue('tabSuspendTime');
+    if (tabSuspend) state.settings.tabSuspendTime = parseInt(tabSuspend);
+    
+    state.settings.hardwareAcceleration = getChecked('hardwareAcceleration');
+    
+    const cacheSize = getValue('maxCacheSize');
+    if (cacheSize) state.settings.maxCacheSize = parseInt(cacheSize);
     
     saveSettings();
     applyTheme();
@@ -1599,33 +1739,35 @@ function setupEventListeners() {
     closeAllModals();
   });
   
-  document.getElementById('resetSettingsBtn').addEventListener('click', resetSettings);
+  safeAddEventListener('resetSettingsBtn', 'click', resetSettings);
   
   // Settings navigation
-  document.querySelectorAll('.settings-nav-item').forEach(item => {
+  safeQuerySelectorAll('.settings-nav-item', (item) => {
     item.addEventListener('click', () => {
       const section = item.dataset.section;
       
-      document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+      safeQuerySelectorAll('.settings-nav-item', (i) => i.classList.remove('active'));
       item.classList.add('active');
       
-      document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
-      document.querySelector(`[data-section-content="${section}"]`).classList.add('active');
+      safeQuerySelectorAll('.settings-section', (s) => s.classList.remove('active'));
+      const sectionContent = document.querySelector(`[data-section-content="${section}"]`);
+      if (sectionContent) sectionContent.classList.add('active');
     });
   });
   
   // Font size slider
-  document.getElementById('fontSizeInput').addEventListener('input', (e) => {
-    document.getElementById('fontSizeValue').textContent = `${e.target.value}px`;
+  safeAddEventListener('fontSizeInput', 'input', (e) => {
+    const display = document.getElementById('fontSizeValue');
+    if (display) display.textContent = `${e.target.value}px`;
   });
   
   // Modal close buttons
-  document.querySelectorAll('.modal-close').forEach(btn => {
+  safeQuerySelectorAll('.modal-close', (btn) => {
     btn.addEventListener('click', closeAllModals);
   });
   
   // Close modal on outside click
-  document.querySelectorAll('.modal').forEach(modal => {
+  safeQuerySelectorAll('.modal', (modal) => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         closeAllModals();
@@ -1984,7 +2126,7 @@ function processVoiceCommand(text) {
 // EXTENSIONS SYSTEM
 // ============================================================================
 
-function setupExtensions() {
+async function setupExtensions() {
   // Load extension settings
   const saved = localStorage.getItem('lumen_extensions');
   if (saved) {
@@ -1993,23 +2135,150 @@ function setupExtensions() {
   
   // Apply initial states
   updateExtensionStates();
+  
+  // Load installed Chrome extensions if running in Electron
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      const installedExtensions = await ipcRenderer.invoke('get-installed-extensions');
+      if (installedExtensions && installedExtensions.length > 0) {
+        console.log('✅ Loaded extensions:', installedExtensions);
+        renderInstalledExtensions(installedExtensions);
+      }
+    } catch (e) {
+      console.log('Not running in Electron or extensions not available');
+    }
+  }
 }
+
+function renderInstalledExtensions(extensions) {
+  const container = document.getElementById('installedExtensionsList');
+  if (!container) return;
+  
+  if (extensions.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color: var(--chrome-text-secondary); padding:20px;">No extensions installed</p>';
+    return;
+  }
+  
+  const html = extensions.map(ext => `
+    <div class="extension-item" style="display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--chrome-border); border-radius:8px; margin-bottom:8px;">
+      <div style="flex:1;">
+        <h4 style="margin:0 0 4px 0;">${escapeHtml(ext.name)}</h4>
+        <p style="margin:0; font-size:12px; color: var(--chrome-text-secondary);">${escapeHtml(ext.description || 'No description')}</p>
+        <p style="margin:4px 0 0 0; font-size:11px; color: var(--chrome-text-tertiary);">v${escapeHtml(ext.version)} • ID: ${escapeHtml(ext.id)}</p>
+      </div>
+      <button onclick="removeExtension('${ext.id}')" class="btn-icon" title="Remove" style="color: var(--chrome-text-secondary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+  
+  container.innerHTML = html;
+}
+
+async function installExtensionFromPath() {
+  if (typeof require === 'undefined') {
+    showNotification('Extension installation requires Electron', 'error');
+    return;
+  }
+  
+  try {
+    const { ipcRenderer } = require('electron');
+    const { dialog } = require('@electron/remote');
+    
+    // Open folder picker
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Select Extension Folder',
+      buttonLabel: 'Install Extension'
+    });
+    
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return;
+    }
+    
+    const extensionPath = result.filePaths[0];
+    const response = await ipcRenderer.invoke('install-extension', extensionPath);
+    
+    if (response.success) {
+      showNotification(`Extension "${response.extension.name}" installed successfully!`, 'success');
+      // Refresh extension list
+      const installedExtensions = await ipcRenderer.invoke('get-installed-extensions');
+      renderInstalledExtensions(installedExtensions);
+    } else {
+      showNotification(`Failed to install extension: ${response.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error installing extension:', error);
+    showNotification('Failed to install extension', 'error');
+  }
+}
+
+async function removeExtension(extensionId) {
+  if (!confirm('Are you sure you want to remove this extension?')) {
+    return;
+  }
+  
+  if (typeof require === 'undefined') {
+    showNotification('Extension management requires Electron', 'error');
+    return;
+  }
+  
+  try {
+    const { ipcRenderer } = require('electron');
+    const response = await ipcRenderer.invoke('remove-extension', extensionId);
+    
+    if (response.success) {
+      showNotification('Extension removed successfully', 'success');
+      // Refresh extension list
+      const installedExtensions = await ipcRenderer.invoke('get-installed-extensions');
+      renderInstalledExtensions(installedExtensions);
+    } else {
+      showNotification(`Failed to remove extension: ${response.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error removing extension:', error);
+    showNotification('Failed to remove extension', 'error');
+  }
+}
+
+window.installExtensionFromPath = installExtensionFromPath;
+window.removeExtension = removeExtension;
 
 function showExtensionsPanel() {
   const panel = document.getElementById('extensionsPanel');
+  if (!panel) return;
+  
   panel.classList.remove('hidden');
   
-  // Update UI with current states
-  document.getElementById('adBlockerToggle').checked = state.extensions.adBlocker.enabled;
-  document.getElementById('imageZoomToggle').checked = state.extensions.imageZoom.enabled;
-  document.getElementById('popupBlockerToggle').checked = state.extensions.popupBlocker.enabled;
-  document.getElementById('darkReaderToggle').checked = state.extensions.darkReader.enabled;
-  document.getElementById('videoDownloaderToggle').checked = state.extensions.videoDownloader.enabled;
-  document.getElementById('zoomTrigger').value = state.extensions.imageZoom.trigger;
+  // Update UI with current states - with safety checks
+  const setChecked = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = value;
+  };
+  
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  };
+  
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  
+  setChecked('adBlockerToggle', state.extensions.adBlocker.enabled);
+  setChecked('imageZoomToggle', state.extensions.imageZoom.enabled);
+  setChecked('popupBlockerToggle', state.extensions.popupBlocker.enabled);
+  setChecked('darkReaderToggle', state.extensions.darkReader.enabled);
+  setChecked('videoDownloaderToggle', state.extensions.videoDownloader.enabled);
+  setValue('zoomTrigger', state.extensions.imageZoom.trigger);
   
   // Update stats
-  document.getElementById('adsBlockedCount').textContent = state.extensions.adBlocker.blocked;
-  document.getElementById('popupsBlockedCount').textContent = state.extensions.popupBlocker.blocked;
+  setText('adsBlockedCount', state.extensions.adBlocker.blocked);
+  setText('popupsBlockedCount', state.extensions.popupBlocker.blocked);
 }
 
 function hideExtensionsPanel() {
@@ -2266,7 +2535,7 @@ const verticalTabsManager = {
     } else {
       // Default tabs
       this.tabs = [
-        { id: Date.now(), title: 'New Tab', url: 'about:blank', favicon: '🌐', active: true }
+          { id: Date.now(), title: 'New Tab', url: 'about:blank', favicon: '', active: true }
       ];
     }
   },
@@ -2323,7 +2592,7 @@ const verticalTabsManager = {
       id: Date.now(),
       title: 'New Tab',
       url: 'about:blank',
-      favicon: '🌐',
+      favicon: '',
       active: false
     };
     
