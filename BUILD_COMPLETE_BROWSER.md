@@ -4,7 +4,6 @@
 
 I've upgraded Lumen from a UI demo to a **fully functional browser** with these changes:
 
-
 ### 1. **Electron Integration with BrowserView**
 - Modified `electron-main.js` to include Chromium's BrowserView
 - BrowserView renders actual websites in a separate secure process
