@@ -8,7 +8,6 @@
 # Run this single command to build the Windows installer
 npm run tauri:build
 ```
-
 This will create:
 - ✅ **`.exe` installer** - Install on any Windows PC
 - ✅ **`.msi` installer** - For corporate deployment
