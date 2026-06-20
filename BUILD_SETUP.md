@@ -2,6 +2,7 @@
 
 ## The Issue
 
+
 You're seeing this error when trying to build:
 ```
 error: linker link.exe not found
