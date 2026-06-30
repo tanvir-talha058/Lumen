@@ -4,7 +4,6 @@ Thank you for your interest in contributing to Lumen! This guide will help you g
 
 ## 🎯 Ways to Contribute
 
-
 ### 1. Code Contributions
 - Implement new features
 - Fix bugs
