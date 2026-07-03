@@ -1,3 +1,4 @@
+
 # Lumen Browser - Architecture Diagram
 
 ## System Overview
