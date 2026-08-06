@@ -7,6 +7,7 @@
 
 An ultra-minimal, pixel-perfect Chrome-inspired browser that's 25x smaller, 3x faster, and packed with features Chrome doesn't have.
 
+
 ![Version](https://img.shields.io/badge/version-3.0.0-blue)
 ![Size](https://img.shields.io/badge/size-8MB-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
