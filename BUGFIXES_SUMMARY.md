@@ -2,7 +2,6 @@
 
 ## 🐛 Issues Found
 
-
 When running the project, several critical issues were discovered:
 
 ### 1. **Layout Broken - Vertical Tabs Overlapping Content**
