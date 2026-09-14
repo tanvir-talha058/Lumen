@@ -3,7 +3,6 @@
 ## Summary
 All critical backend issues have been fixed! The Lumen Browser is now fully functional.
 
-
 ## Fixes Applied to the new files and xml
 
 ### 1. **Electron Configuration (electron-main.js)**
