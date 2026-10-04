@@ -6,7 +6,6 @@
 The **admin privilege issue is bypassed!** I used `electron-packager` instead of `electron-builder`.
 
 ---
-
 ## 📦 **Your Browser is Built!**
 
 ### **Location:**
