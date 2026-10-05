@@ -13,6 +13,7 @@ The **admin privilege issue is bypassed!** I used `electron-packager` instead of
 dist-packaged\Lumen Browser-win32-x64\
 ```
 
+
 ### **Main Executable:**
 ```
 dist-packaged\Lumen Browser-win32-x64\Lumen Browser.exe
